@@ -1,0 +1,17 @@
+// PostgreSQL Schema ERD
+digraph {
+	rankdir=LR
+	users [label="{users|id|username}" shape=record]
+	projects [label="{projects|id|name|user_id (FK)}" shape=record]
+	experiments [label="{experiments|id|name|project_id (FK)}" shape=record]
+	documents [label="{documents|id|name|experiment_id (FK)}" shape=record]
+	probes [label="{probes|id|description|document_id (FK)|latest_temperature_celsius|latest_temperature_time}" shape=record]
+	samples [label="{samples|id|probe_id (FK)|sample_count|last_sample_time|current_sampling_interval|min_sampling_interval|max_sampling_interval}" shape=record]
+	spectra [label="{spectra|id|sample_id (FK)|type|file_path|recorded_at}" shape=record]
+	projects -> users
+	experiments -> projects
+	documents -> experiments
+	probes -> documents
+	samples -> probes
+	spectra -> samples
+}
