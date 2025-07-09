@@ -5,6 +5,7 @@ SERVER_URL = "opc.tcp://localhost:62552/iCOpcUaServer"
 
 def try_connect(server_url, max_retries=3, delay=2):
     client = Client(server_url)
+    """Want to connect to the opcua server. Tries three times and if all fail then it will produce an error for the user."""
     
     for attempt in range(1, max_retries + 1):
         try:
