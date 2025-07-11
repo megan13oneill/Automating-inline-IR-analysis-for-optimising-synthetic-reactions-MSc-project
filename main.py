@@ -20,7 +20,7 @@ from nodes_config import nodes_config
 from connect import try_connect
 from acquire_metadata import get_probe1_data
 
-PROBE_1_NODE_ID = "ns=2;s=EXP.Probes.Probe1"
+PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 
 if __name__ == "__main__":
     client = try_connect()
