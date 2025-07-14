@@ -69,3 +69,4 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
     except Exception as e: 
         print(f"Critical error during logging: {e}")
         
+# note - we need to upgrade this to get a single csv each sampling interval. 
