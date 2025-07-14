@@ -33,13 +33,13 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
             try:
                 interval_ms = client.get_node(sampling_interval_id).get_value()
                 delay_seconds = interval_ms / 1000.0
-                print(f"Using sampling intervaal: {delay_seconds:.2f} seconds")
+                print(f"Using sampling interval: {delay_seconds:.2f} seconds")
 
             except Exception:
                 print("Could not read sampling interval. Using default delay.")
 
         # open csv and write header
-        with open(csv_filename, mode='w', newline=' ') as file:
+        with open(csv_filename, mode='w', newline='') as file:
             writer = csv.writer(file)
 
             # write unique csv file title/header. 
@@ -53,7 +53,7 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
                     break
 
                 try:
-                    # rad the raw spectrum data.
+                    # read the raw spectrum data.
                     spectrum = client.get_node(raw_spectrum_id).get_value()
                     timestamp = datetime.now().isoformat()
                     writer.writerow([timestamp] + list(spectrum))
@@ -64,7 +64,7 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
                     print(f"Unexpected error: {e}")
 
                 time.sleep(delay_seconds)
-                print(f"/n Logging complete. Data saved to: {csv_filename}")
+            print(f"/n Logging complete. Data saved to: {csv_filename}")
 
     except Exception as e: 
         print(f"Critical error during logging: {e}")
