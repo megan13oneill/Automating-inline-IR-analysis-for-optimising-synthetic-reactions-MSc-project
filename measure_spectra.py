@@ -3,6 +3,7 @@ import time
 import os
 from datetime import datetime
 from opcua.ua.uaerrors import UaStatusCodeError
+import numpy as np
 
 def raw_spectrum_logger (client,
                          probe_status_id,
@@ -11,18 +12,13 @@ def raw_spectrum_logger (client,
                          output_dir="logs",
                          default_delay=1.0,
                          wavenumber_start =4000,
-                         wavenumber_end= 600
+                         wavenumber_end= 650
 ):
     
     """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
 
     # make sure directory exists
     os.makedirs(output_dir, exist_ok=True)
-
-    # makes a unique csv filename which will work for continuous data logging.
-    timestamp_str = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-    csv_filename = os.path.join(output_dir, f"raw_spectrum_{timestamp_str}.csv")
-
     print("Waiting for probe to start ...")
 
     try: 
@@ -44,54 +40,49 @@ def raw_spectrum_logger (client,
             except Exception:
                 print("Could not read sampling interval. Using default delay.")
 
-        # open csv and write header
-        with open(csv_filename, mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["timestamp", "wavenumber", "transmittance"])
+        # get one spectrum to determine its length
+        initial_spectrum = client.get_node(raw_spectrum_id).get_value()
+        num_points = len(initial_spectrum)
 
-            # # get one spectrum to determine its length
-            # initial_spectrum = client.get_node(raw_spectrum_id).get_value()
-            # num_points = len(initial_spectrum)
+        # build descending wavenumber axis
+        wavenumbers = np.linspace(wavenumber_start, wavenumber_end, num_points).round(2).tolist()
+
+        spectrum_counter = 0
+
+        # loop data logger whilst probe is running. will stop when not running. 
+        while True:
+            probe_status = client.get_node(probe_status_id).get_value()
+            if probe_status.lower() != "running":
+                print(f"Probe stopped. Final status: {probe_status}")
+                break
             
-            # # write unique csv file title/header. 
-            # writer.writerow(["timestamp"] + [f"point_{i}" for i in range (1, num_points + 1)])
+            try: 
+                # read the raw spectrum data.
+                spectrum = client.get_node(raw_spectrum_id).get_value()
+                timestamp_str = datetime.now().strftime("%d-%m-%Y_%H-%M-%S_%f")[:-3]
+                csv_filename = os.path.join(output_dir, f"raw_spectrum_{timestamp_str}.csv")
 
-            # loop data logger whilst probe is running. will stop when not running. 
-            while True:
-                probe_status = client.get_node(probe_status_id).get_value()
-                if probe_status.lower() != "running":
-                    print(f"Probe stopped. Final status: {probe_status}")
-                    break
-
-                try:
-                    # read the raw spectrum data.
-                    spectrum = client.get_node(raw_spectrum_id).get_value()
-                    timestamp = datetime.now().isoformat()
-
-                    # create wavenumber axis dynamically
-                    num_points = len(spectrum)
-                    wavenumbers = list(
-                        reversed(
-                            [round(wavenumber_start - i * ((wavenumber_start - wavenumber_end) / (num_points - 1)), 2)
-                             for i in range(num_points)]
-                        )
-                    )
-
+                # open csv and write header
+                with open(csv_filename, mode='w', newline='') as file:
+                    writer = csv.writer(file)
+                    # header for each csv
+                    writer.writerow(["wavenumber", "transmittance"])
                     for wn, trans in zip(wavenumbers, spectrum):
-                        writer.writerow([timestamp, wn, trans])
+                        writer.writerow([wn, trans])
 
                     file.flush()
+                    os.fsync(file.fileno())
 
+                print(f"Spectrum logged at {datetime.now().strftime('%H:%M:%S')}")
+                spectrum_counter += 1
 
-                    writer.writerow([timestamp] + list(spectrum))
-                    print(f"Logged spectrum at {timestamp}")
-                except UaStatusCodeError as e:
-                    print(f" OPC UA error while reading spectrum: {e}")
-                except Exception as e:
-                    print(f"Unexpected error: {e}")
+            except UaStatusCodeError as e:
+                print(f" OPC UA error while reading spectrum: {e}")
+            except Exception as e:
+                print(f"Unexpected error: {e}")
 
-                time.sleep(delay_seconds)
-            print(f"/n Logging complete. Data saved to: {csv_filename}")
+            time.sleep(delay_seconds)
+        print(f"\n Logging complete. {spectrum_counter} spectra saved in '{output_dir}'.")
 
     except Exception as e: 
         print(f"Critical error during logging: {e}")
