@@ -4,7 +4,15 @@ import os
 from datetime import datetime
 from opcua.ua.uaerrors import UaStatusCodeError
 
-def raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_interval_id=None, output_dir="logs", default_delay=1.0):
+def raw_spectrum_logger (client,
+                         probe_status_id,
+                         raw_spectrum_id,
+                         sampling_interval_id=None,
+                         output_dir="logs",
+                         default_delay=1.0,
+                         wavenumber_start =4000,
+                         wavenumber_end= 600
+):
     
     """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
 
@@ -39,13 +47,14 @@ def raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_inte
         # open csv and write header
         with open(csv_filename, mode='w', newline='') as file:
             writer = csv.writer(file)
+            writer.writerow(["timestamp", "wavenumber", "transmittance"])
 
-            # get one spectrum to determine its length
-            initial_spectrum = client.get_node(raw_spectrum_id).get_value()
-            num_points = len(initial_spectrum)
+            # # get one spectrum to determine its length
+            # initial_spectrum = client.get_node(raw_spectrum_id).get_value()
+            # num_points = len(initial_spectrum)
             
-            # write unique csv file title/header. 
-            writer.writerow(["timestamp"] + [f"point_{i}" for i in range (1, num_points + 1)])
+            # # write unique csv file title/header. 
+            # writer.writerow(["timestamp"] + [f"point_{i}" for i in range (1, num_points + 1)])
 
             # loop data logger whilst probe is running. will stop when not running. 
             while True:
@@ -58,6 +67,22 @@ def raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_inte
                     # read the raw spectrum data.
                     spectrum = client.get_node(raw_spectrum_id).get_value()
                     timestamp = datetime.now().isoformat()
+
+                    # create wavenumber axis dynamically
+                    num_points = len(spectrum)
+                    wavenumbers = list(
+                        reversed(
+                            [round(wavenumber_start - i * ((wavenumber_start - wavenumber_end) / (num_points - 1)), 2)
+                             for i in range(num_points)]
+                        )
+                    )
+
+                    for wn, trans in zip(wavenumbers, spectrum):
+                        writer.writerow([timestamp, wn, trans])
+
+                    file.flush()
+
+
                     writer.writerow([timestamp] + list(spectrum))
                     print(f"Logged spectrum at {timestamp}")
                 except UaStatusCodeError as e:
