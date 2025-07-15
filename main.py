@@ -19,7 +19,7 @@ if __name__ == "__main__":
         client,
         probe_status_id="ns=2;s=Local.iCIR.Probe1.ProbeStatus",
         raw_spectrum_id="ns=2;s=Local.iCIR.Probe1.LastRawSpectra",
-        sampling_interval_id="ns=2;s=Local.iCIR.Probe1.",
+        sampling_interval_id="ns=2;s=Local.iCIR.Probe1.LastSamplingInterval",
         output_dir="logs"
     )
 
