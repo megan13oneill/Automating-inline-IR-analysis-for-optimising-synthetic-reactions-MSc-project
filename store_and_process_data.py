@@ -28,6 +28,7 @@ def plot_and_save_spectrum(wavenumbers, transmittance, output_path):
 
     # Save to file
     plt.savefig(output_path, dpi=300)
+    plt.savefig(output_path.replace(".png", ".pdf"), dpi=300)
     plt.close()
 
 def process_and_store_data(input_dir="logs",
@@ -43,7 +44,7 @@ def process_and_store_data(input_dir="logs",
 
     files = sorted([f for f in os.listdir(input_dir) if f.endswith(".csv")])
     if not files:
-        print(f"No CSV files found in {output_dir}")
+        print(f"No CSV files found in {input_dir}")
         return
     print(f"Processing {len(files)} spectra ...")
 
