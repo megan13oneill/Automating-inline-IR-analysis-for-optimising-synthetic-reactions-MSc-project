@@ -1,6 +1,7 @@
 from connect import try_connect
 from acquire_metadata import get_probe1_data
 from measure_spectra import raw_spectrum_logger
+from store_and_process_data import process_and_store_data
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 
@@ -21,6 +22,14 @@ if __name__ == "__main__":
         raw_spectrum_id="ns=2;s=Local.iCIR.Probe1.SpectraRaw",
         sampling_interval_id="ns=2;s=Local.iCIR.Probe1.CurrentSamplingInterval",
         output_dir="logs"
+    )
+
+    process_and_store_data(
+        input_dir="logs",
+        output_dir="processed",
+        smooth=True,
+        window_length=11,
+        polyorder=2
     )
 
     client.disconnect()
