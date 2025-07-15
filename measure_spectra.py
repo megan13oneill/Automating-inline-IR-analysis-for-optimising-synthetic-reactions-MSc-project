@@ -20,14 +20,13 @@ def raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_inte
     try: 
         # wait for the probe status to be 'running' to start logging data.
         while True: 
-            status = client.get_node(probe_status_id).get_value()
-            if status.lower() == "running":
+            probe_status = client.get_node(probe_status_id).get_value()
+            if probe_status.lower() == "running":
                 print(" Probe is now running. Beginning data capture ...")
                 break
             time.sleep(1)
         
         delay_seconds = default_delay
-
         # get the sampling interval if available.
         if sampling_interval_id:
             try:
@@ -50,9 +49,9 @@ def raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_inte
 
             # loop data logger whilst probe is running. will stop when not running. 
             while True:
-                status = client.get_node(probe_status_id).get_value()
-                if status.lower() != "running":
-                    print(f"Probe stopped. Final status: {status}")
+                probe_status = client.get_node(probe_status_id).get_value()
+                if probe_status.lower() != "running":
+                    print(f"Probe stopped. Final status: {probe_status}")
                     break
 
                 try:

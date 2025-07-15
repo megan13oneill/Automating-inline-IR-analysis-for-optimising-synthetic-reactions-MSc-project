@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
     raw_spectrum_logger(
         client,
+        probe_status_id="",
         raw_spectrum_id="",
         sampling_interval_id="",
         output_dir="logs"
