@@ -4,9 +4,9 @@ import os
 from datetime import datetime
 from opcua.ua.uaerrors import UaStatusCodeError
 
-def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_interval_id=None, output_dir="logs", default_delay=1.0):
+def raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sampling_interval_id=None, output_dir="logs", default_delay=1.0):
     
-    """ Continuously logs raw spectrum data while the probe is running. """
+    """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
 
     # make sure directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -34,7 +34,6 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
                 interval_ms = client.get_node(sampling_interval_id).get_value()
                 delay_seconds = interval_ms / 1000.0
                 print(f"Using sampling interval: {delay_seconds:.2f} seconds")
-
             except Exception:
                 print("Could not read sampling interval. Using default delay.")
 
@@ -42,8 +41,12 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
         with open(csv_filename, mode='w', newline='') as file:
             writer = csv.writer(file)
 
+            # get one spectrum to determine its length
+            initial_spectrum = client.get_node(raw_spectrum_id).get_value()
+            num_points = len(initial_spectrum)
+            
             # write unique csv file title/header. 
-            writer.writerow(["timestamp"] + [f"point_{i}" for i in range (1,10001)])
+            writer.writerow(["timestamp"] + [f"point_{i}" for i in range (1, num_points + 1)])
 
             # loop data logger whilst probe is running. will stop when not running. 
             while True:
@@ -68,5 +71,4 @@ def continuous_raw_spectrum_logger (client, probe_status_id, raw_spectrum_id, sa
 
     except Exception as e: 
         print(f"Critical error during logging: {e}")
-        
-# note - we need to upgrade this to get a single csv each sampling interval. 
+
