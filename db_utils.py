@@ -86,14 +86,12 @@ with sqlite3.connect(db_path) as conn:
     conn.close()
     print("Database setup completed.")
 
-
-
 def get_or_create(cursor, table, unique_col, unique_val, defaults=None):
 
     """ Get the ID if exists, otherwise insert and return the new ID."""
 
     table_id_column = f"{table[:-1]}ID" if table.endswith("s") else f"{table}ID"
-    cursor.execute(f"SELECT {table_id_column}ID FROM {table} WHERE {unique_col} = ?", (unique_val,))
+    cursor.execute(f"SELECT {table_id_column} FROM {table} WHERE {unique_col} = ?", (unique_val,))
     row = cursor.fetchone()
     if row:
         return row[0]
@@ -191,3 +189,5 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
 
     finally:
         conn.close()
+
+

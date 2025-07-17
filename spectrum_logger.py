@@ -4,8 +4,11 @@ import os
 from datetime import datetime
 from opcua.ua.uaerrors import UaStatusCodeError
 import numpy as np
+
 from db_utils import insert_probe_sample_and_spectrum
 from metadata_utils import get_probe1_data
+from common_utils import get_current_timestamp_str, write_spectrum_csv
+
 
 def raw_spectrum_logger (client,
                          probe_status_id,
@@ -63,30 +66,22 @@ def raw_spectrum_logger (client,
             try: 
                 # read the raw spectrum data.
                 spectrum = client.get_node(raw_spectrum_id).get_value()
-                timestamp_str = datetime.now().strftime("%d-%m-%Y_%H-%M-%S_%f")[:-3]
+                timestamp_str = get_current_timestamp_str()
                 csv_filename = os.path.join(output_dir, f"raw_spectrum_{timestamp_str}.csv")
 
-                # open csv and write header
-                with open(csv_filename, mode='w', newline='') as file:
-                    writer = csv.writer(file)
-                    # header for each csv
-                    writer.writerow(["wavenumber", "transmittance"])
-                    for wn, trans in zip(wavenumbers, spectrum):
-                        writer.writerow([wn, trans])
-                    file.flush()
-                    os.fsync(file.fileno())
-
+                write_spectrum_csv(wavenumbers, spectrum, csv_filename)
                 print(f"Spectrum logged at {datetime.now().strftime('%H:%M:%S')}")
 
                 if db_path and document_ids and probe1_node_id:
                     metadata = dict(get_probe1_data(client, probe1_node_id))
-                    
                     insert_probe_sample_and_spectrum(
                         db_path = db_path,
                         document_id = document_ids["DocumentID"],
                         metadata_dict = metadata,
                         spectrum_csv_path = csv_filename
                     )
+                elif any([db_path, document_ids, probe1_node_id]):
+                    print("Skipping DB insert - incomplete DB parameters.")
 
                 spectrum_counter += 1
 
@@ -96,6 +91,7 @@ def raw_spectrum_logger (client,
                 print(f"Unexpected error: {e}")
 
             time.sleep(delay_seconds)
+
         print(f"\n Logging complete. {spectrum_counter} spectra saved in '{output_dir}'.")
 
     except Exception as e: 

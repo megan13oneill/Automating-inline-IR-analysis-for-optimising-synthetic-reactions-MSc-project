@@ -4,6 +4,18 @@ import numpy as np
 from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 
+def adjust_window_length(window_length, data_length):
+
+    """Ensure the window_length is an odd number, less than data_length, and at least 3."""
+
+    if window_length >= data_length:
+        window_length = data_length - 1
+    if window_length %2 == 0:
+        window_length -= 1
+    if window_length < 3:
+        window_length = 3
+    return window_length
+
 def plot_and_save_spectrum(wavenumbers, transmittance, output_path):
     """ plotting the transmittance vs wavenumber and saving that file as a pdf and a png within the specified directory."""
     
@@ -25,16 +37,16 @@ def plot_and_save_spectrum(wavenumbers, transmittance, output_path):
     plt.tight_layout()
 
     # Save to file
-    plt.savefig(output_path, dpi=300)
-    plt.savefig(output_path.replace(".png", ".pdf"), dpi=300)
+    base, ext = os.path.splitext(output_path)
+    plt.savefig(f"{base}.png", dpi=300)
+    plt.savefig(f"{base}.pdf", dpi=300)
     plt.close()
 
-def process_and_store_data(input_dir="logs",
-                           output_dir="processed",
-                           smooth=False,
-                           window_length=11,
-                           polyorder=2
-):
+def process_and_store_data(input_dir: str = "logs",
+                           output_dir: str = "processed",
+                           smooth: bool = False,
+                           window_length: int = 11,
+                           polyorder: int = 2) -> None:
    
     """ open csv and process the data by applying smoothing and then save the processed data."""
 
@@ -57,7 +69,7 @@ def process_and_store_data(input_dir="logs",
             wavenumbers = []
             transmittance = []
 
-            with open(input_path, 'r') as file: 
+            with open(input_path, 'r', newline='') as file: 
                 # look through the first bit of file and check if there is a header, then go back to the beginning to read carefully.
                 sample_data = file.read(1024)
                 file.seek(0)
@@ -80,12 +92,7 @@ def process_and_store_data(input_dir="logs",
             #smooth if requested
             if smooth and len(transmittance) >= window_length:
                 # need to make sure window_length is odd.
-                if window_length % 2 == 0:
-                    window_length += 1
-                if window_length >= len(transmittance):
-                    window_length = len(transmittance) - 1
-                    if window_length % 2 == 0:
-                        window_length -= 1
+                window_length = adjust_window_length(window_length, len(transmittance))
 
                 transmittance = savgol_filter(transmittance, window_length, polyorder)
 
