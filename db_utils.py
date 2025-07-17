@@ -2,88 +2,89 @@ import sqlite3
 import os
 from datetime import datetime
 
+
+db_path = "ReactIR.db"
+
 # Connect to SQLite DB
-conn = sqlite3.connect("ReactIR.db")
-cursor = conn.cursor()
+with sqlite3.connect(db_path) as conn:
+    cursor = conn.cursor()
 
 # Create tables if they don't exist
-cursor.executescript("""
--- Create Users table
-CREATE TABLE IF NOT EXISTS Users (
-    UserID INTEGER PRIMARY KEY,
-    Username TEXT NOT NULL UNIQUE
-);
+    cursor.executescript("""
+    -- Create Users table
+    CREATE TABLE IF NOT EXISTS Users (
+        UserID INTEGER PRIMARY KEY,
+        Username TEXT NOT NULL UNIQUE
+    );
 
--- Create Projects table
-CREATE TABLE IF NOT EXISTS Projects (
-    ProjectID INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
-    UserID INTEGER,
-    FOREIGN KEY (UserID) REFERENCES Users(UserID)
-);
+    -- Create Projects table
+    CREATE TABLE IF NOT EXISTS Projects (
+        ProjectID INTEGER PRIMARY KEY,
+        Name TEXT NOT NULL,
+        UserID INTEGER,
+        FOREIGN KEY (UserID) REFERENCES Users(UserID)
+    );
 
--- Create Experiments table
-CREATE TABLE IF NOT EXISTS Experiments (
-    ExperimentID INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
-    ProjectID INTEGER,
-    FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
-);
+    -- Create Experiments table
+    CREATE TABLE IF NOT EXISTS Experiments (
+        ExperimentID INTEGER PRIMARY KEY,
+        Name TEXT NOT NULL,
+        ProjectID INTEGER,
+        FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
+    );
 
--- Create Documents table
-CREATE TABLE IF NOT EXISTS Documents (
-    DocumentID INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
-    ExperimentID INTEGER,
-    FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
-);
+    -- Create Documents table
+    CREATE TABLE IF NOT EXISTS Documents (
+        DocumentID INTEGER PRIMARY KEY,
+        Name TEXT NOT NULL,
+        ExperimentID INTEGER,
+        FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
+    );
 
--- Create Probes table
-CREATE TABLE IF NOT EXISTS Probes (
-    ProbeID INTEGER PRIMARY KEY,
-    Description TEXT NOT NULL,
-    DocumentID INTEGER,
-    LatestTemperatureCelsius REAL,
-    LatestTemperatureTime TEXT,
-    FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-);
+    -- Create Probes table
+    CREATE TABLE IF NOT EXISTS Probes (
+        ProbeID INTEGER PRIMARY KEY,
+        Description TEXT NOT NULL,
+        DocumentID INTEGER,
+        LatestTemperatureCelsius REAL,
+        LatestTemperatureTime TEXT,
+        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+    );
 
--- Create Samples table
-CREATE TABLE IF NOT EXISTS Samples (
-    SampleID INTEGER PRIMARY KEY,
-    ProbeID INTEGER,
-    SampleCount INTEGER,
-    LastSampleTime TEXT,
-    CurrentSamplingInterval INTEGER,
-    MinSamplingInterval INTEGER,
-    MaxSamplingInterval INTEGER,
-    FOREIGN KEY (ProbeID) REFERENCES Probes(ProbeID)
-);
+    -- Create Samples table
+    CREATE TABLE IF NOT EXISTS Samples (
+        SampleID INTEGER PRIMARY KEY,
+        ProbeID INTEGER,
+        SampleCount INTEGER,
+        LastSampleTime TEXT,
+        CurrentSamplingInterval INTEGER,
+        FOREIGN KEY (ProbeID) REFERENCES Probes(ProbeID)
+    );
 
--- Create Spectra table
-CREATE TABLE IF NOT EXISTS Spectra (
-    SpectraID INTEGER PRIMARY KEY,
-    SampleID INTEGER,
-    Type TEXT CHECK (Type IN ('raw', 'background')),
-    FilePath TEXT NOT NULL,
-    RecordedAt TEXT,
-    FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
-);
+    -- Create Spectra table
+    CREATE TABLE IF NOT EXISTS Spectra (
+        SpectraID INTEGER PRIMARY KEY,
+        SampleID INTEGER,
+        Type TEXT CHECK (Type IN ('raw', 'background')),
+        FilePath TEXT NOT NULL,
+        RecordedAt TEXT,
+        FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
+    );
 
--- Create Reagents table
-CREATE TABLE IF NOT EXISTS Reagents (
-    ReagentID INTEGER PRIMARY KEY,
-    DocumentID INTEGER,
-    CommonName TEXT NOT NULL,
-    InChI TEXT,
-    CASNumber TEXT,
-    FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-);
-""")
+    -- Create Reagents table
+    CREATE TABLE IF NOT EXISTS Reagents (
+        ReagentID INTEGER PRIMARY KEY,
+        DocumentID INTEGER,
+        CommonName TEXT NOT NULL,
+        InChI TEXT,
+        CASNumber TEXT,
+        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+    );
+    """)
 
-conn.commit()
-conn.close()
-print("Database setup completed.")
+    conn.commit()
+    conn.close()
+    print("Database setup completed.")
 
 
 
@@ -91,7 +92,8 @@ def get_or_create(cursor, table, unique_col, unique_val, defaults=None):
 
     """ Get the ID if exists, otherwise insert and return the new ID."""
 
-    cursor.execute(f"SELECT {table}ID FROM {table} WHERE {unique_col} = ?", (unique_val,))
+    table_id_column = f"{table[:-1]}ID" if table.endswith("s") else f"{table}ID"
+    cursor.execute(f"SELECT {table_id_column}ID FROM {table} WHERE {unique_col} = ?", (unique_val,))
     row = cursor.fetchone()
     if row:
         return row[0]
