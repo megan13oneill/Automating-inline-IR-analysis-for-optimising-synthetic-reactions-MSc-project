@@ -5,23 +5,21 @@ from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 
 def plot_and_save_spectrum(wavenumbers, transmittance, output_path):
-    plt.figure(figsize=(14, 9))  # Larger figure size
-
+    """ plotting the transmittance vs wavenumber and saving that file as a pdf within the specified directory."""
+    
+    plt.figure(figsize=(14, 9))  
     plt.plot(wavenumbers, transmittance, color='darkblue', linewidth=2)
 
-    # Axis configuration
-    plt.gca().invert_xaxis()  # IR spectra typically show wavenumber decreasing left to right
+    # Axis configuration as IR spectra typically show wavenumber decreasing left to right
+    plt.gca().invert_xaxis() 
 
     plt.title("Infrared Spectrum", fontsize=28, weight='bold')
     plt.xlabel("Wavenumber (cm⁻¹)", fontsize=24, labelpad=15)
     plt.ylabel("Transmittance (%)", fontsize=24, labelpad=15)
 
-    # Tick font sizes
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
-
-    # Grid for clarity
-    plt.grid(True, which='both', linestyle='--', linewidth=0.6)
+    plt.grid(False)
 
     # Tight layout for full visibility
     plt.tight_layout()
