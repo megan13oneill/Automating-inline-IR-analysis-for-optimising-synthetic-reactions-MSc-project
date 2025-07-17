@@ -5,7 +5,7 @@ from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 
 def plot_and_save_spectrum(wavenumbers, transmittance, output_path):
-    """ plotting the transmittance vs wavenumber and saving that file as a pdf within the specified directory."""
+    """ plotting the transmittance vs wavenumber and saving that file as a pdf and a png within the specified directory."""
     
     plt.figure(figsize=(14, 9))  
     plt.plot(wavenumbers, transmittance, color='darkblue', linewidth=2)
@@ -58,17 +58,35 @@ def process_and_store_data(input_dir="logs",
             transmittance = []
 
             with open(input_path, 'r') as file: 
+                # look through the first bit of file and check if there is a header, then go back to the beginning to read carefully.
+                sample_data = file.read(1024)
+                file.seek(0)
+                has_header = csv.Sniffer().has_header(sample_data)
                 reader = csv.reader(file)
-                next(reader)
+
+                if has_header:
+                    next(reader)
+
                 for row in reader: 
-                    wavenumbers.append(float(row[0]))
-                    transmittance.append(float(row[1]))
-                
+                    try:
+                        wavenumbers.append(float(row[0]))
+                        transmittance.append(float(row[1]))
+                    except (ValueError, IndexError):
+                        continue
+            
             wavenumbers = np.array(wavenumbers)
             transmittance = np.array(transmittance)
 
             #smooth if requested
             if smooth and len(transmittance) >= window_length:
+                # need to make sure window_length is odd.
+                if window_length % 2 == 0:
+                    window_length += 1
+                if window_length >= len(transmittance):
+                    window_length = len(transmittance) - 1
+                    if window_length % 2 == 0:
+                        window_length -= 1
+
                 transmittance = savgol_filter(transmittance, window_length, polyorder)
 
             # save processed spectrum to CSV
@@ -79,11 +97,9 @@ def process_and_store_data(input_dir="logs",
                     writer.writerow([wn,tr])
 
             plot_and_save_spectrum(wavenumbers, transmittance, output_plot_path)
-            print(f"Processed + plotted: {base_filename}")
+            print(f"Processed and Plotted: {base_filename}")
 
         except Exception as e:
             print(f"Error processing '{file_name}': {e}")
 
-
-
-
+    print("All sprecta have been processed!")
