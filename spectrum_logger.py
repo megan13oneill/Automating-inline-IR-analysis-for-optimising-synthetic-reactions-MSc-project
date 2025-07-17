@@ -4,6 +4,8 @@ import os
 from datetime import datetime
 from opcua.ua.uaerrors import UaStatusCodeError
 import numpy as np
+from db_utils import insert_probe_sample_and_spectrum
+from metadata_utils import get_probe1_data
 
 def raw_spectrum_logger (client,
                          probe_status_id,
@@ -78,6 +80,7 @@ def raw_spectrum_logger (client,
 
                 if db_path and document_ids and probe1_node_id:
                     metadata = dict(get_probe1_data(client, probe1_node_id))
+                    
                     insert_probe_sample_and_spectrum(
                         db_path = db_path,
                         document_id = document_ids["DocumentID"],

@@ -1,7 +1,7 @@
 from connect import try_connect
-from acquire_metadata import get_probe1_data
-from measure_spectra import raw_spectrum_logger
-from store_and_process_data import process_and_store_data
+from metadata_utils import get_probe1_data
+from spectrum_logger import raw_spectrum_logger
+from processing_utils import process_and_store_data
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 
@@ -31,13 +31,6 @@ if __name__ == "__main__":
         window_length=11,
         polyorder=2
     )
-
-    # insert_probe_sample_and_spectrum(
-    # db_path=db_path,
-    # document_id=document_ids["DocumentID"],
-    # metadata_dict=probe_metadata,
-    # spectrum_csv_path=csv_file
-# )
 
     client.disconnect()
  

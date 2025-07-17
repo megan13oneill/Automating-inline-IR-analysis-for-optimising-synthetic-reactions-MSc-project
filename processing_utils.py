@@ -102,4 +102,4 @@ def process_and_store_data(input_dir="logs",
         except Exception as e:
             print(f"Error processing '{file_name}': {e}")
 
-    print("All sprecta have been processed!")
+    print("All spectra have been processed!")
