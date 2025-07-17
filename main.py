@@ -32,5 +32,12 @@ if __name__ == "__main__":
         polyorder=2
     )
 
+    # insert_probe_sample_and_spectrum(
+    # db_path=db_path,
+    # document_id=document_ids["DocumentID"],
+    # metadata_dict=probe_metadata,
+    # spectrum_csv_path=csv_file
+# )
+
     client.disconnect()
  

@@ -12,7 +12,10 @@ def raw_spectrum_logger (client,
                          output_dir="logs",
                          default_delay=1.0,
                          wavenumber_start =4000,
-                         wavenumber_end= 650
+                         wavenumber_end= 650,
+                         db_path=None,
+                         document_ids=None,
+                         probe1_node_id=None
 ):
     
     """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
@@ -43,7 +46,6 @@ def raw_spectrum_logger (client,
         # get one spectrum to determine its length
         initial_spectrum = client.get_node(raw_spectrum_id).get_value()
         num_points = len(initial_spectrum)
-
         # build descending wavenumber axis
         wavenumbers = np.linspace(wavenumber_start, wavenumber_end, num_points).round(2).tolist()
 
@@ -69,11 +71,20 @@ def raw_spectrum_logger (client,
                     writer.writerow(["wavenumber", "transmittance"])
                     for wn, trans in zip(wavenumbers, spectrum):
                         writer.writerow([wn, trans])
-
                     file.flush()
                     os.fsync(file.fileno())
 
                 print(f"Spectrum logged at {datetime.now().strftime('%H:%M:%S')}")
+
+                if db_path and document_ids and probe1_node_id:
+                    metadata = dict(get_probe1_data(client, probe1_node_id))
+                    insert_probe_sample_and_spectrum(
+                        db_path = db_path,
+                        document_id = document_ids["DocumentID"],
+                        metadata_dict = metadata,
+                        spectrum_csv_path = csv_filename
+                    )
+
                 spectrum_counter += 1
 
             except UaStatusCodeError as e:
