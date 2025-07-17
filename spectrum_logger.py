@@ -32,10 +32,14 @@ def raw_spectrum_logger (client,
     try: 
         # wait for the probe status to be 'running' to start logging data.
         while True: 
-            probe_status = client.get_node(probe_status_id).get_value()
-            if probe_status.lower() == "running":
-                print(" Probe is now running. Beginning data capture ...")
-                break
+            try:
+
+                probe_status = client.get_node(probe_status_id).get_value()
+                if isinstance(probe_status, str) and probe_status.lower() == "running":
+                    print(" Probe is now running. Beginning data capture ...")
+                    break
+            except Exception as e:
+                print(f"Error reading probe status: {e}")
             time.sleep(1)
         
         delay_seconds = default_delay
@@ -55,15 +59,17 @@ def raw_spectrum_logger (client,
         wavenumbers = np.linspace(wavenumber_start, wavenumber_end, num_points).round(2).tolist()
 
         spectrum_counter = 0
+        print("Logging started. Press Ctrl+C to stop. \n")
 
         # loop data logger whilst probe is running. will stop when not running. 
         while True:
-            probe_status = client.get_node(probe_status_id).get_value()
-            if probe_status.lower() != "running":
-                print(f"Probe stopped. Final status: {probe_status}")
-                break
+            try:
+
+                probe_status = client.get_node(probe_status_id).get_value()
+                if probe_status.lower() != "running":
+                    print(f"Probe stopped. Final status: {probe_status}")
+                    break
             
-            try: 
                 # read the raw spectrum data.
                 spectrum = client.get_node(raw_spectrum_id).get_value()
                 timestamp_str = get_current_timestamp_str()
@@ -96,4 +102,6 @@ def raw_spectrum_logger (client,
 
     except Exception as e: 
         print(f"Critical error during logging: {e}")
+
+    print(f"\n Logging complete. {spectrum_counter} spectra saved in '{output_dir}'.")
 

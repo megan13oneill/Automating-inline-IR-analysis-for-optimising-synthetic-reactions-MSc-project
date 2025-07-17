@@ -20,20 +20,21 @@ def main():
         # Start logging raw spectrum data
         raw_spectrum_logger(
             client,
-            probe_status_id="ns;s=Local.iCIR.Probe1.ProbeStatus",
-            raw_spectrum_id="ns;s=Local.iCIR.Probe1.SpectraRaw",
-            sampling_interval_id="ns;s=Local.iCIR.Probe1.CurrentSamplingInterval",
+            probe_status_id="ns=2;s=Local.iCIR.Probe1.ProbeStatus",
+            raw_spectrum_id="ns=2;s=Local.iCIR.Probe1.SpectraRaw",
+            sampling_interval_id="ns=2;s=Local.iCIR.Probe1.CurrentSamplingInterval",
             output_dir="logs"
         )
 
         # Process and store the logged data
-        process_and_store_data(
+        processed_count = process_and_store_data(
             input_dir="logs",
             output_dir="processed",
             smooth=True,
             window_length=11,
             polyorder=2
         )
+        print(f"Successfully processed {processed_count} spectrum files.")
 
 if __name__ == "__main__":
     main()

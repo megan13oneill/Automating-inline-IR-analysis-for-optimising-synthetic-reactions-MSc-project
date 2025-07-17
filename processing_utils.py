@@ -21,25 +21,20 @@ def plot_and_save_spectrum(wavenumbers, transmittance, output_path):
     
     plt.figure(figsize=(14, 9))  
     plt.plot(wavenumbers, transmittance, color='darkblue', linewidth=2)
-
     # Axis configuration as IR spectra typically show wavenumber decreasing left to right
     plt.gca().invert_xaxis() 
-
     plt.title("Infrared Spectrum", fontsize=28, weight='bold')
     plt.xlabel("Wavenumber (cm⁻¹)", fontsize=24, labelpad=15)
     plt.ylabel("Transmittance (%)", fontsize=24, labelpad=15)
-
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
     plt.grid(False)
-
     # Tight layout for full visibility
     plt.tight_layout()
 
     # Save to file
-    base, ext = os.path.splitext(output_path)
-    plt.savefig(f"{base}.png", dpi=300)
-    plt.savefig(f"{base}.pdf", dpi=300)
+    plt.savefig(f"{output_path}.png", dpi=300)
+    plt.savefig(f"{output_path}.pdf", dpi=300)
     plt.close()
 
 def process_and_store_data(input_dir: str = "logs",
@@ -62,7 +57,7 @@ def process_and_store_data(input_dir: str = "logs",
         input_path = os.path.join(input_dir, file_name)
         base_filename = os.path.splitext(file_name)[0]
         output_csv_path = os.path.join(output_dir, f"processed_{file_name}")
-        output_plot_path = os.path.join(output_dir, f"{base_filename}.png")
+        output_plot_path = os.path.join(output_dir, f"{base_filename}")
 
         try: 
             #load spectrum data
@@ -110,3 +105,5 @@ def process_and_store_data(input_dir: str = "logs",
             print(f"Error processing '{file_name}': {e}")
 
     print("All spectra have been processed!")
+    return len(files)
+
