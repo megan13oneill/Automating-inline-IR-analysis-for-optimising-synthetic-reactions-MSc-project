@@ -1,83 +1,55 @@
-import os
-import sqlite3
-import tempfile
-import csv
+from db_utils import setup_database  # or from db_utils if you put it there
 from db_utils import insert_probe_sample_and_spectrum
+import sqlite3
+import os
 
-def create_dummy_csv(file_path):
-    with open(file_path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['wavenumber', 'transmittance'])
-        for i in range(4000, 650, -10):  # Simulated descending wavenumber
-            writer.writerow([i, 100 - i % 100])  # Dummy transmittance data
+# Set the test database path
+db_path = "test_probe.db"
 
-def setup_temp_db():
-    # Create a temporary SQLite DB
-    conn = sqlite3.connect(":memory:")
+# Remove any old version
+if os.path.exists(db_path):
+    os.remove(db_path)
+
+# Step 1: Set up the database schema
+setup_database(db_path)
+
+# Step 2: Insert a dummy document
+with sqlite3.connect(db_path) as conn:
     cursor = conn.cursor()
-
-    # Simulate your expected schema
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS probe_samples (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            document_id TEXT,
-            metadata_key TEXT,
-            metadata_value TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS spectra (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sample_id INTEGER,
-            wavenumber REAL,
-            transmittance REAL,
-            FOREIGN KEY (sample_id) REFERENCES probe_samples(id)
-        )
-    """)
+    cursor.execute("INSERT INTO Documents (DocumentID, Name, ExperimentID) VALUES (?, ?, ?)", (1, 'TestDoc', None))
     conn.commit()
-    return conn
 
-def test_insert_probe_sample_and_spectrum():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Set up temp CSV file
-        csv_path = os.path.join(tmpdir, "dummy_spectrum.csv")
-        create_dummy_csv(csv_path)
+# Step 3: Prepare metadata and fake spectrum
+metadata = {
+    "ProbeTemperatureCelsius": 25.0,
+    "LastUpdatedTime": "2025-07-21T15:00:00Z",
+    "CurrentSamplingInterval": 1000
+}
 
-        # Simulate metadata and document ID
-        dummy_metadata = {
-            "Product Name": "TestChemical",
-            "Operator": "TestUser",
-            "Batch Number": "ABC123"
-        }
-        document_id = "DOC-TEST-001"
+document_ids = {"DocumentID": 1}
 
-        # Set up in-memory DB and patch db_path in function
-        conn = setup_temp_db()
+spectrum_csv_path = "test_spectrum.csv"
+with open(spectrum_csv_path, "w") as f:
+    f.write("wavenumber,transmittance\n")
+    f.write("4000,50\n")
+    f.write("3999,51\n")
 
-        # Monkey patch insert function to use our in-memory DB
-        def patched_insert(**kwargs):
-            kwargs["db_path"] = ":memory:"
-            insert_probe_sample_and_spectrum(**kwargs)
+# Step 4: Call your insert function
+try:
+    insert_probe_sample_and_spectrum(
+        db_path=db_path,
+        document_id=document_ids["DocumentID"],
+        metadata_dict=metadata,
+        spectrum_csv_path=spectrum_csv_path
+    )
+    print("✅ Data inserted successfully.")
+except Exception as e:
+    print(f"❌ Error during insert: {e}")
 
-        # Write a version of insert function that uses the in-memory conn
-        insert_probe_sample_and_spectrum(
-            db_path=":memory:",
-            document_id=document_id,
-            metadata_dict=dummy_metadata,
-            spectrum_csv_path=csv_path,
-            conn=conn  # assuming you modify your insert function to accept this
-        )
-
-        # Validate inserts
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM probe_samples")
-        print("Sample rows:", cursor.fetchone()[0])
-
-        cursor.execute("SELECT COUNT(*) FROM spectra")
-        print("Spectrum rows:", cursor.fetchone()[0])
-
-        # Cleanup
-        conn.close()
-
-if __name__ == "__main__":
-    test_insert_probe_sample_and_spectrum()
+# Step 5: Confirm the data is there
+with sqlite3.connect(db_path) as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Samples;")
+    print("Samples:", cursor.fetchone()[0])
+    cursor.execute("SELECT COUNT(*) FROM Spectra;")
+    print("Spectra:", cursor.fetchone()[0])
