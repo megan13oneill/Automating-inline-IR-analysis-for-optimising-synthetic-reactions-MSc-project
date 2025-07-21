@@ -36,7 +36,7 @@ def setup_database(db_path="test_probe.db"):
 
         -- Create Documents table
         CREATE TABLE IF NOT EXISTS Documents (
-            DocumentID INTEGER PRIMARY KEY,
+            DocumentID INTEGER PRIMARY KEY AUTOINCREMENT,
             Name TEXT NOT NULL,
             ExperimentID INTEGER,
             FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
@@ -86,6 +86,21 @@ def setup_database(db_path="test_probe.db"):
         conn.commit()
     # conn.close()
         print("Database setup completed.")
+
+def create_new_document(db_path: str, description: str = None) -> int:
+    """ Insert a new document entry and return the new DocumentID."""
+    timestamp = datetime.now().isoformat()
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """ INSERT INTO Documents (Timestamp, Description)
+            VALUES (?, ?)
+            """,
+            (timestamp, description)
+        )
+        conn.comit()
+        return cursor.lastrowid
 
 def get_or_create(cursor, table, unique_col, unique_val, defaults=None):
 
