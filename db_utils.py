@@ -3,9 +3,9 @@ import os
 from datetime import datetime
 
 
-db_path = "test_probe.db"
+db_path = "ReactIR.db"
 
-def setup_database(db_path="test_probe.db"):
+def setup_database(db_path="ReactIR.db"):
 # Connect to SQLite DB
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
