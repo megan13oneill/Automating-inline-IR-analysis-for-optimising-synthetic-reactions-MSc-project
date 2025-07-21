@@ -64,7 +64,6 @@ def raw_spectrum_logger (client,
         # loop data logger whilst probe is running. will stop when not running. 
         while True:
             try:
-
                 probe_status = client.get_node(probe_status_id).get_value()
                 if probe_status.lower() != "running":
                     print(f"Probe stopped. Final status: {probe_status}")
