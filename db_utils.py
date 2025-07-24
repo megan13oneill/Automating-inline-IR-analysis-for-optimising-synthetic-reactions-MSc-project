@@ -82,7 +82,7 @@ def setup_database(db_path="ReactIR.db"):
             FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
         );
 
-        -- Create Trends table
+        -- Create Trends table (represents a collection session e.g. user selects "Start Recording')
         CREATE TABLE IF NOT EXISTS Trends (
             TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
             DocumentID INTEGER,
@@ -92,10 +92,11 @@ def setup_database(db_path="ReactIR.db"):
             FOREIGN KEY (DocumentID) REFERNCES Documents(DocumentID)
         );
 
-        -- Create Probe Temps table linked to Trends
-        CREATE TABLE IF NOT EXISTS ProbeTemps (
-            ProbeTempID INTEGER PRIMARY KEY AUTOINCREMENT,
+        -- Create Probe Temps table linked to Trends (Stores time-series probe data linked to a trend)
+        CREATE TABLE IF NOT EXISTS ProbeTempSamples (
+            SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
             TrendID INTEGER,
+            Timestamp TEXT,
             Description TEXT,
             Source TEXT,
             Value REAL,
@@ -103,10 +104,11 @@ def setup_database(db_path="ReactIR.db"):
             FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
         );
         
-        -- Create TrendPeaks table (user-selected peaks from OPC UA)
-        CREATE TABLE IF NOT EXISTS TrendPeaks (
-            PeakID INTEGER PRIMARY KEY AUTOINCREMENT,
+        -- Create Peak table (stores time-series user peak data (multiple OPC nodes per sample))
+        CREATE TABLE IF NOT EXISTS PeakSamples (
+            SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
             TrendID integer,
+            Timestamp TEXT,
             NodeID TEXT,
             Value REAL,
             Label TEXT,
