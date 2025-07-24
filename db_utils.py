@@ -68,7 +68,7 @@ def setup_database(db_path="ReactIR.db"):
         CREATE TABLE IF NOT EXISTS Spectra (
             SpectraID INTEGER PRIMARY KEY,
             SampleID INTEGER,
-            Type TEXT CHECK (Type IN ('raw', 'background')),
+            Type TEXT CHECK (Type IN ('raw', 'background', 'processed', 'reference')),
             FilePath TEXT NOT NULL,
             RecordedAt TEXT,
             FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
@@ -119,7 +119,11 @@ def setup_database(db_path="ReactIR.db"):
         """)
 
         conn.commit()
-    # conn.close()
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID;)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID;)")
+
+        conn.commit()
         print("Database setup completed.")
 
 def create_new_document(db_path: str, name: str, experiment_id: int) -> int:
