@@ -81,6 +81,36 @@ def setup_database(db_path="ReactIR.db"):
             CASNumber TEXT,
             FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
         );
+
+        -- Create Trends table
+        CREATE TABLE IF NOT EXISTS Trends (
+            TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
+            DocumentID INTEGER,
+            TIMESTAMP TEXT DEFAULT CURRENT_TIMESTAMP,
+            Usernote TEXT,
+            FOREIGN KEY (DocumentID) REFERNCES Documents(DocumentID)
+        );
+
+        -- Create Probe Temps table linked to Trends
+        CREATE TABLE IF NOT EXISTS ProbeTemps (
+            ProbeTempID INTEGER PRIMARY KEY AUTOINCREMENT,
+            TrendID INTEGER,
+            Description TEXT,
+            Source TEXT,
+            Value REAL,
+            TreatedValue REAL,
+            FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
+        );
+        
+        -- Create TrendPeaks table (user-selected peaks from OPC UA)
+        CREATE TABLE IF NOT EXISTS TrendPeaks (
+            PeakID INTEGER PRIMARY KEY AUTOINCREMENT,
+            TrendID integer,
+            NodeID TEXT,
+            Value REAL,
+            Label TEXT,
+            FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
+        );
         """)
 
         conn.commit()
