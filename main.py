@@ -2,7 +2,8 @@ from connect import try_connect
 from metadata_utils import get_probe1_data
 from spectrum_logger import raw_spectrum_logger
 from processing_utils import process_and_store_data
-from db_utils import create_new_document
+from db_utils import create_new_document, start_trend_sampling, create_new_trend
+
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 db_path = "ReactIR.db"

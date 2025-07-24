@@ -91,7 +91,7 @@ def setup_database(db_path="ReactIR.db"):
             StartTime TEXT,
             EndTime TEXT,
             Usernote TEXT,
-            FOREIGN KEY (DocumentID) REFERNCES Documents(DocumentID)
+            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
         );
 
         -- Create Probe Temps table linked to Trends (Stores time-series probe data linked to a trend)
@@ -122,19 +122,15 @@ def setup_database(db_path="ReactIR.db"):
     # conn.close()
         print("Database setup completed.")
 
-def create_new_document(db_path: str, description: str = None) -> int:
+def create_new_document(db_path: str, name: str, experiment_id: int) -> int:
     """ Insert a new document entry and return the new DocumentID."""
-    timestamp = datetime.now().isoformat()
-
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """ INSERT INTO Documents (Timestamp, Description)
-            VALUES (?, ?)
-            """,
-            (timestamp, description)
+            """ INSERT INTO Documents (Name, ExperimentID) VALUES (?, ?)""",
+            (name, experiment_id)
         )
-        conn.comit()
+        conn.commit()
         return cursor.lastrowid
 
 def get_or_create(cursor, table, unique_col, unique_val, defaults=None):
@@ -241,7 +237,19 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
     finally:
         conn.close()
 
-def start_trend_sampling(db_path, trend_id, probe_node, probe_description, peak_nodes, interval_sec=2):
+def create_new_trend(db_path, document_id, user_note=("")):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO Trends (DocumentID, StartTime, UserNote)
+        VALUES (?, ?, ?)
+    """, (document_id, datetime.now().isoformat(), user_note))
+    trend_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return trend_id
+
+def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_description, peak_nodes, interval_sec=2):
     
     """ Samples both probe and peak values at a fixed interval and stores in db."""
 
@@ -255,7 +263,7 @@ def start_trend_sampling(db_path, trend_id, probe_node, probe_description, peak_
 
             # Read probe temp
             probe_value = probe_node.get_value()
-            treated_value = treated_value.get_value()
+            treated_value = treated_node.get_value()
 
             cursor.execute("""
                 INSERT INTO ProbeTempSamples (TrendID, Timestamp, Description, Source, Value, TreatedValue)
@@ -297,3 +305,7 @@ def start_trend_sampling(db_path, trend_id, probe_node, probe_description, peak_
 
     finally:
         conn.close()
+
+
+
+
