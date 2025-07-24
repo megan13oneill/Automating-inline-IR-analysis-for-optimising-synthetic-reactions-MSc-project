@@ -86,7 +86,8 @@ def setup_database(db_path="ReactIR.db"):
         CREATE TABLE IF NOT EXISTS Trends (
             TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
             DocumentID INTEGER,
-            TIMESTAMP TEXT DEFAULT CURRENT_TIMESTAMP,
+            StartTime TEXT,
+            EndTime TEXT,
             Usernote TEXT,
             FOREIGN KEY (DocumentID) REFERNCES Documents(DocumentID)
         );
@@ -236,4 +237,51 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
     finally:
         conn.close()
 
+def insert_trend(db_path, document_id, user_note, probe_temp_data, peaks_data):
+    
+    """ Inserts a new trend, including probe temp details and user-selected peaks."""
 
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    try:
+        # Insert into Trends table
+        cursor.execute("""
+            INSERT INTO Trends (DocumentID, Timestamp, UserNote)
+            VALUES (?, ?, ?)
+        """ , (document_id, datetime.now().isoformat(), user_note))
+        trend_id = cursor.lastrowid
+
+        # Insert into ProbeTemps
+        cursor.execute("""
+            INSERT INTO ProbeTemps (TrendID, Description, Source, Value, TreatedValue)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            trend_id,
+            probe_temp_data.get('desription'),
+            probe_temp_data.get('source'),
+            probe_temp_data.get('value'),
+            probe_temp_data.get('treated_value')
+        ))
+
+        # Insert user-selected TrendPeaks
+        for peak in peaks_data:
+            cursor.execute("""
+                INSERT INTO TrendPeaks (TrendID, NodeID, Vlue, Label)
+                VALUES (?, ?, ?, ?)
+            """, (
+                trend_id,
+                peak.get('node_id'),
+                peak.get('value'),
+                peak.get('label')
+            ))
+
+        conn.commit()
+        print(f"✅ Trend inserted with TrendID: {trend_id}")
+
+    except Exception as e:
+        print(f"❌ Error inserting trend: {e}")
+        conn.rollback()
+
+    finally:
+        conn.close()
