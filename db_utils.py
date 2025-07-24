@@ -1,6 +1,8 @@
 import sqlite3
 import os
 from datetime import datetime
+import time
+from opcua import Client
 
 
 db_path = "ReactIR.db"
@@ -239,50 +241,58 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
     finally:
         conn.close()
 
-def insert_trend(db_path, document_id, user_note, probe_temp_data, peaks_data):
+def start_trend_sampling(db_path, trend_id, probe_node, probe_description, peak_nodes, interval_sec=2):
     
-    """ Inserts a new trend, including probe temp details and user-selected peaks."""
+    """ Samples both probe and peak values at a fixed interval and stores in db."""
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+    print("Sampling started ... Press Ctrl + C to stop.")
 
     try:
-        # Insert into Trends table
-        cursor.execute("""
-            INSERT INTO Trends (DocumentID, Timestamp, UserNote)
-            VALUES (?, ?, ?)
-        """ , (document_id, datetime.now().isoformat(), user_note))
-        trend_id = cursor.lastrowid
+        while True:
+            timestamp = datetime.now().isoformat()
 
-        # Insert into ProbeTemps
-        cursor.execute("""
-            INSERT INTO ProbeTemps (TrendID, Description, Source, Value, TreatedValue)
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            trend_id,
-            probe_temp_data.get('desription'),
-            probe_temp_data.get('source'),
-            probe_temp_data.get('value'),
-            probe_temp_data.get('treated_value')
-        ))
+            # Read probe temp
+            probe_value = probe_node.get_value()
+            treated_value = treated_value.get_value()
 
-        # Insert user-selected TrendPeaks
-        for peak in peaks_data:
             cursor.execute("""
-                INSERT INTO TrendPeaks (TrendID, NodeID, Vlue, Label)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO ProbeTempSamples (TrendID, Timestamp, Description, Source, Value, TreatedValue)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 trend_id,
-                peak.get('node_id'),
-                peak.get('value'),
-                peak.get('label')
+                timestamp,
+                probe_description, 
+                probe_node.nodeid.to_string(),
+                probe_value,
+                treated_value
             ))
 
-        conn.commit()
-        print(f"✅ Trend inserted with TrendID: {trend_id}")
+            for node_obj, label in peak_nodes:
+                peak_val = node_obj.get_value()
+                cursor.execute("""
+                    INSERT INTO PeakSamples (TrendID, Timestamp, NodeID, Value, Label)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    trend_id,
+                    timestamp,
+                    node_obj.nodeid.to_string(),
+                    peak_val,
+                    label
+                ))
 
-    except Exception as e:
-        print(f"❌ Error inserting trend: {e}")
+            conn.commit()
+            time.sleep(interval_sec)
+       
+    except KeyboardInterrupt:
+        print("Sampling stopped.")
+        end_time = datetime.now().isoformat()
+        cursor.execute("UPDATE Trends SET EndTime = ? WHERE TrendID = ?", (end_time, trend_id))
+        conn.commit()
+    
+    except Exception as e: 
+        print(f"Error during sampling: {e}")
         conn.rollback()
 
     finally:
