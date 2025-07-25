@@ -11,120 +11,129 @@ def setup_database(db_path="ReactIR.db"):
 # Connect to SQLite DB
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
+    
+    # PRAGMA commands to boost performance.
+    cursor.execute("PRAGMA journal_mode=WAL;") # better concurrency
+    cursor.execute("PRAGMA synchronous=NORMAL;") # faster writes, still resonably safe
+    cursor.execute("PRAGMA temp_store=MEMORY;") # Temp tables stay in RAM
 
 # Create tables if they don't exist
-        cursor.executescript("""
-        -- Create Users table
-        CREATE TABLE IF NOT EXISTS Users (
-            UserID INTEGER PRIMARY KEY,
-            Username TEXT NOT NULL UNIQUE
-        );
+    cursor.executescript("""
+    -- Create Users table
+    CREATE TABLE IF NOT EXISTS Users (
+        UserID INTEGER PRIMARY KEY,
+        Username TEXT NOT NULL UNIQUE
+    );
 
-        -- Create Projects table
-        CREATE TABLE IF NOT EXISTS Projects (
-            ProjectID INTEGER PRIMARY KEY,
-            Name TEXT NOT NULL,
-            UserID INTEGER,
-            FOREIGN KEY (UserID) REFERENCES Users(UserID)
-        );
+    -- Create Projects table
+    CREATE TABLE IF NOT EXISTS Projects (
+        ProjectID INTEGER PRIMARY KEY,
+        Name TEXT NOT NULL,
+        UserID INTEGER,
+        FOREIGN KEY (UserID) REFERENCES Users(UserID)
+    );
 
-        -- Create Experiments table
-        CREATE TABLE IF NOT EXISTS Experiments (
-            ExperimentID INTEGER PRIMARY KEY,
-            Name TEXT NOT NULL,
-            ProjectID INTEGER,
-            FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
-        );
+    -- Create Experiments table
+    CREATE TABLE IF NOT EXISTS Experiments (
+        ExperimentID INTEGER PRIMARY KEY,
+        Name TEXT NOT NULL,
+        ProjectID INTEGER,
+        FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
+    );
 
-        -- Create Documents table
-        CREATE TABLE IF NOT EXISTS Documents (
-            DocumentID INTEGER PRIMARY KEY AUTOINCREMENT,
-            Name TEXT NOT NULL,
-            ExperimentID INTEGER,
-            FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
-        );
+    -- Create Documents table
+    CREATE TABLE IF NOT EXISTS Documents (
+        DocumentID INTEGER PRIMARY KEY AUTOINCREMENT,
+        Name TEXT NOT NULL,
+        ExperimentID INTEGER,
+        FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
+    );
 
-        -- Create Probes table
-        CREATE TABLE IF NOT EXISTS Probes (
-            ProbeID INTEGER PRIMARY KEY,
-            Description TEXT NOT NULL,
-            DocumentID INTEGER,
-            LatestTemperatureCelsius REAL,
-            LatestTemperatureTime TEXT,
-            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-        );
+    -- Create Probes table
+    CREATE TABLE IF NOT EXISTS Probes (
+        ProbeID INTEGER PRIMARY KEY,
+        Description TEXT NOT NULL,
+        DocumentID INTEGER,
+        LatestTemperatureCelsius REAL,
+        LatestTemperatureTime TEXT,
+        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+    );
 
-        -- Create Samples table
-        CREATE TABLE IF NOT EXISTS Samples (
-            SampleID INTEGER PRIMARY KEY,
-            ProbeID INTEGER,
-            SampleCount INTEGER,
-            LastSampleTime TEXT,
-            CurrentSamplingInterval INTEGER,
-            FOREIGN KEY (ProbeID) REFERENCES Probes(ProbeID)
-        );
+    -- Create Samples table
+    CREATE TABLE IF NOT EXISTS Samples (
+        SampleID INTEGER PRIMARY KEY,
+        ProbeID INTEGER,
+        SampleCount INTEGER,
+        LastSampleTime TEXT,
+        CurrentSamplingInterval INTEGER,
+        FOREIGN KEY (ProbeID) REFERENCES Probes(ProbeID)
+    );
 
-        -- Create Spectra table
-        CREATE TABLE IF NOT EXISTS Spectra (
-            SpectraID INTEGER PRIMARY KEY,
-            SampleID INTEGER,
-            Type TEXT CHECK (Type IN ('raw', 'background', 'processed', 'reference')),
-            FilePath TEXT NOT NULL,
-            RecordedAt TEXT,
-            FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
-        );
+    -- Create Spectra table
+    CREATE TABLE IF NOT EXISTS Spectra (
+        SpectraID INTEGER PRIMARY KEY,
+        SampleID INTEGER,
+        Type TEXT CHECK (Type IN ('raw', 'background', 'processed', 'reference')),
+        FilePath TEXT NOT NULL,
+        RecordedAt TEXT,
+        FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
+    );
 
-        -- Create Reagents table
-        CREATE TABLE IF NOT EXISTS Reagents (
-            ReagentID INTEGER PRIMARY KEY,
-            DocumentID INTEGER,
-            CommonName TEXT NOT NULL,
-            InChI TEXT,
-            CASNumber TEXT,
-            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-        );
+    -- Create Reagents table
+    CREATE TABLE IF NOT EXISTS Reagents (
+        ReagentID INTEGER PRIMARY KEY,
+        DocumentID INTEGER,
+        CommonName TEXT NOT NULL,
+        InChI TEXT,
+        CASNumber TEXT,
+        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+    );
 
-        -- Create Trends table (represents a collection session e.g. user selects "Start Recording')
-        CREATE TABLE IF NOT EXISTS Trends (
-            TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
-            DocumentID INTEGER,
-            StartTime TEXT,
-            EndTime TEXT,
-            Usernote TEXT,
-            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-        );
+    -- Create Trends table (represents a collection session e.g. user selects "Start Recording')
+    CREATE TABLE IF NOT EXISTS Trends (
+        TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
+        DocumentID INTEGER,
+        StartTime TEXT,
+        EndTime TEXT,
+        Usernote TEXT,
+        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+    );
 
-        -- Create Probe Temps table linked to Trends (Stores time-series probe data linked to a trend)
-        CREATE TABLE IF NOT EXISTS ProbeTempSamples (
-            SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
-            TrendID INTEGER,
-            Timestamp TEXT,
-            Description TEXT,
-            Source TEXT,
-            Value REAL,
-            TreatedValue REAL,
-            FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
-        );
-        
-        -- Create Peak table (stores time-series user peak data (multiple OPC nodes per sample))
-        CREATE TABLE IF NOT EXISTS PeakSamples (
-            SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
-            TrendID integer,
-            Timestamp TEXT,
-            NodeID TEXT,
-            Value REAL,
-            Label TEXT,
-            FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
-        );
-        """)
+    -- Create Probe Temps table linked to Trends (Stores time-series probe data linked to a trend)
+    CREATE TABLE IF NOT EXISTS ProbeTempSamples (
+        SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
+        TrendID INTEGER,
+        Timestamp TEXT,
+        Description TEXT,
+        Source TEXT,
+        Value REAL,
+        TreatedValue REAL,
+        FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
+    );
+    
+    -- Create Peak table (stores time-series user peak data (multiple OPC nodes per sample))
+    CREATE TABLE IF NOT EXISTS PeakSamples (
+        SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
+        TrendID integer,
+        Timestamp TEXT,
+        NodeID TEXT,
+        Value REAL,
+        Label TEXT,
+        FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
+    );
+    """)
 
-        conn.commit()
+    conn.commit()
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID;)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID;)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID;)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID;)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_timestamp ON ProbeTempSamples (Timestamp);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_timestamp ON PeakSamples (Timestamp);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_experiment ON Documents (ExperimentID);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_probes_document ON Probes (DocumentID);")
 
-        conn.commit()
-        print("Database setup completed.")
+    conn.commit()
+    print("Database setup completed.")
 
 def create_new_document(db_path: str, name: str, experiment_id: int) -> int:
     """ Insert a new document entry and return the new DocumentID."""
@@ -253,13 +262,15 @@ def create_new_trend(db_path, document_id, user_note=("")):
     conn.close()
     return trend_id
 
-def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_description, peak_nodes, interval_sec=2):
+def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_description, peak_nodes, interval_sec=2, batch_size=10):
     
     """ Samples both probe and peak values at a fixed interval and stores in db."""
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     print("Sampling started ... Press Ctrl + C to stop.")
+
+    insert_count = 0
 
     try:
         while True:
@@ -293,12 +304,18 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
                     peak_val,
                     label
                 ))
+            
+            insert_count += 1
 
-            conn.commit()
+            if insert_count >= batch_size:
+                conn.commit()
+                insert_count = 0
+
             time.sleep(interval_sec)
        
     except KeyboardInterrupt:
         print("Sampling stopped.")
+        conn.commit()
         end_time = datetime.now().isoformat()
         cursor.execute("UPDATE Trends SET EndTime = ? WHERE TrendID = ?", (end_time, trend_id))
         conn.commit()
