@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import time
 from opcua import Client
-
+import traceback
 
 db_path = "ReactIR.db"
 
@@ -131,6 +131,7 @@ def setup_database(db_path="ReactIR.db"):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_timestamp ON PeakSamples (Timestamp);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_experiment ON Documents (ExperimentID);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_probes_document ON Probes (DocumentID);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_trends_document ON Trends (DocumentID);")
 
     conn.commit()
     print("Database setup completed.")
@@ -254,7 +255,7 @@ def create_new_trend(db_path, document_id, user_note=("")):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO Trends (DocumentID, StartTime, UserNote)
+        INSERT INTO Trends (DocumentID, StartTime, Usernote)
         VALUES (?, ?, ?)
     """, (document_id, datetime.now().isoformat(), user_note))
     trend_id = cursor.lastrowid
@@ -325,8 +326,29 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
         conn.rollback()
 
     finally:
+        if insert_count > 0:
+            conn.commit()
         conn.close()
 
+# def end_trend(db_path, trend_id):
+#     """ Marks the end of trend with a timestamp."""
+#     with sqlite3.connect(db_path) as conn:
+#         cursor = conn.cursor()
+#         end_time
 
 
 
+
+
+
+
+
+def log_error_to_file(error_log_path, context_message, exception=None):
+    """Logs error with timestamp, optional context, and stack trace."""
+    with open(error_log_path, 'a') as f:
+        f.write(f"\n[ERROR] {datetime.now().isoformat()}\n")
+        f.write(f"Context: {context_message}\n")
+        if exception: 
+            f.write(f"Exception: {str(exception)}\n")
+            f.write(traceback.format_exc())
+        f.write("-" * 60 + "\n")

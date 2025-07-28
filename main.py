@@ -1,3 +1,5 @@
+import argparse
+
 from connect import try_connect
 from metadata_utils import get_probe1_data
 from spectrum_logger import raw_spectrum_logger
@@ -9,6 +11,12 @@ PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 db_path = "ReactIR.db"
 
 def main():
+    parser = argparse.ArgumentParser(description='Infrared Spectrum Logger CLI')
+
+
+
+
+
     with try_connect() as client:
         if not client: 
             print("Failed to connect to OPC UA server.")

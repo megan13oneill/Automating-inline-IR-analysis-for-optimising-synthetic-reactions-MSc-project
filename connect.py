@@ -18,6 +18,7 @@ def try_connect(server_url=SERVER_URL, max_retries=3, delay=2):
         for attempt in range(1, max_retries + 1):
             try:
                 client.connect()
+                connected = True
                 print(f"Connected to OPC UA server at {server_url} (Attempt {attempt})")
                 yield client
                 break
