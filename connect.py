@@ -26,10 +26,10 @@ def try_connect(server_url=SERVER_URL, max_retries=3, delay=2, error_log_path=No
                 yield client
                 break
             except Exception as e:
-                message = f"Attempt {attempt} failed to connect to {server_url}"
-                print(f"{message}: {e}")
+                error_message = f"Attempt {attempt} failed to connect to {server_url}"
+                print(f"{error_message}: {e}")
                 if error_log_path:
-                    log_error_to_file(error_log_path, message, e)
+                    log_error_to_file(error_log_path, error_message, e)
 
                 if attempt < max_retries:
                     time.sleep(delay)   # wait before next attempt

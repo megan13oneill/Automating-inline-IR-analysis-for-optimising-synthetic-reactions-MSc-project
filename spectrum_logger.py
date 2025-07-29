@@ -8,6 +8,7 @@ import numpy as np
 from db_utils import insert_probe_sample_and_spectrum
 from metadata_utils import get_probe1_data
 from common_utils import get_current_timestamp_str, write_spectrum_csv
+from error_logger import log_error_to_file
 
 
 def raw_spectrum_logger (client,
@@ -20,7 +21,8 @@ def raw_spectrum_logger (client,
                          wavenumber_end= 650,
                          db_path=None,
                          document_ids=None,
-                         probe1_node_id=None
+                         probe1_node_id=None,
+                         error_log_path=None
 ):
     
     """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
@@ -29,17 +31,21 @@ def raw_spectrum_logger (client,
     os.makedirs(output_dir, exist_ok=True)
     print("Waiting for probe to start ...")
 
+    spectrum_counter = 0 
+
     try: 
         # wait for the probe status to be 'running' to start logging data.
         while True: 
             try:
-
                 probe_status = client.get_node(probe_status_id).get_value()
                 if isinstance(probe_status, str) and probe_status.lower() == "running":
                     print(" Probe is now running. Beginning data capture ...")
                     break
             except Exception as e:
-                    print(f"Error reading probe status: {e}")
+                    error_message = "Error reading probe status before start"
+                    print(f"{error_message}: {e}")
+                    if error_log_path:
+                        log_error_to_file(error_log_path, error_message, e)
             time.sleep(1)
         
         delay_seconds = default_delay
@@ -49,8 +55,11 @@ def raw_spectrum_logger (client,
                 interval_ms = client.get_node(sampling_interval_id).get_value()
                 delay_seconds = interval_ms / 1000.0
                 print(f"Using sampling interval: {delay_seconds:.2f} seconds")
-            except Exception:
-                print("Could not read sampling interval. Using default delay.")
+            except Exception as e:
+                error_message = "Could not read sampling interval. Using default delay."
+                print(f"{error_message}")
+                if error_log_path:
+                    log_error_to_file(error_log_path, error_message, e)
 
         # get one spectrum to determine its length
         initial_spectrum = client.get_node(raw_spectrum_id).get_value()
@@ -58,7 +67,6 @@ def raw_spectrum_logger (client,
         # build descending wavenumber axis
         wavenumbers = np.linspace(wavenumber_start, wavenumber_end, num_points).round(2).tolist()
 
-        spectrum_counter = 0
         print("Logging started. Press Ctrl+C to stop. \n")
 
         # loop data logger whilst probe is running. will stop when not running. 
@@ -91,16 +99,24 @@ def raw_spectrum_logger (client,
                 spectrum_counter += 1
 
             except UaStatusCodeError as e:
-                print(f" OPC UA error while reading spectrum: {e}")
+                error_message = "OPC UA error while reading spectrum"
+                print(f" {error_message}: {e}")
+                if error_log_path:
+                    log_error_to_file(error_log_path, error_message, e)
+
             except Exception as e:
-                print(f"Unexpected error: {e}")
+                error_message = "Unexpected error during logging loop"
+                print(f"{error_message}: {e}")
+                if error_log_path:
+                    log_error_to_file(error_log_path, error_message, e)
 
             time.sleep(delay_seconds)
 
-        print(f"\n Logging complete. {spectrum_counter} spectra saved in '{output_dir}'.")
-
     except Exception as e: 
-        print(f"Critical error during logging: {e}")
+        error_message = "Critical error during raw spectrum logging"
+        print(f"{error_message}: {e}")
+        if error_log_path:
+                    log_error_to_file(error_log_path, error_message, e)
 
     print(f"\n Logging complete. {spectrum_counter} spectra saved in '{output_dir}'.")
 
