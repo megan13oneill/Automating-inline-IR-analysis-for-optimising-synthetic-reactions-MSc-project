@@ -292,6 +292,8 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
     print("Sampling started ... Press Ctrl + C to stop.")
 
     insert_count = 0
+    probe_temp_buffer = []
+    peak_sample_buffer= []
 
     try:
         while True:
@@ -301,10 +303,7 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
             probe_value = probe_node.get_value()
             treated_value = treated_node.get_value()
 
-            cursor.execute("""
-                INSERT INTO ProbeTempSamples (TrendID, Timestamp, Description, Source, Value, TreatedValue)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
+            probe_temp_buffer.append((
                 trend_id,
                 timestamp,
                 probe_description, 
@@ -315,40 +314,58 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
 
             for node_obj, label in peak_nodes:
                 peak_val = node_obj.get_value()
-                cursor.execute("""
-                    INSERT INTO PeakSamples (TrendID, Timestamp, NodeID, Value, Label)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
+                peak_sample_buffer.append((
                     trend_id,
                     timestamp,
                     node_obj.nodeid.to_string(),
                     peak_val,
                     label
                 ))
-            
-            insert_count += 1
 
-            if insert_count >= batch_size:
+            if len(probe_temp_buffer) >= batch_size:
+                cursor.executemany("""
+                    INSERT INTO ProbeTempSamples (TrendID, Timestamp, Description, Source, Value, TreatedValue)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, probe_temp_buffer)
+
+                cursor.executemany("""
+                    INSERT INTO PeakSamples (TrendID, Timestamp, NodeID, Value, Label)
+                    VALUES (?, ?, ?, ?, ?)
+                """, peak_sample_buffer)
+
                 conn.commit()
-                insert_count = 0
+                probe_temp_buffer.clear()
+                peak_sample_buffer.clear()
 
             time.sleep(interval_sec)
-       
+
     except KeyboardInterrupt:
         print("Sampling stopped.")
+        # Flush remaining
+        if probe_temp_buffer:
+            cursor.executemany("""
+                INSERT INTO ProbeTempSamples (TrendID, Timestamp, Description, Source, Value, TreatedValue)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, probe_temp_buffer)
+
+        if peak_sample_buffer:
+            cursor.executemany("""
+                INSERT INTO PeakSamples (TrendID, Timestamp, NodeID, Value, Label)
+                VALUES (?, ?, ?, ?, ?)
+            """, peak_sample_buffer)
+
         conn.commit()
+
         end_time = datetime.now().isoformat()
         cursor.execute("UPDATE Trends SET EndTime = ? WHERE TrendID = ?", (end_time, trend_id))
         conn.commit()
-    
-    except Exception as e: 
+
+    except Exception as e:
         log_error_to_file(e, "Error in start_trend_sampling()")
         print(f"Error during sampling: {e}")
         conn.rollback()
 
     finally:
-        if insert_count > 0:
-            conn.commit()
         conn.close()
 
 def end_trend(db_path, trend_id):
