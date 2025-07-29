@@ -335,20 +335,3 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
 #     with sqlite3.connect(db_path) as conn:
 #         cursor = conn.cursor()
 #         end_time
-
-
-
-
-
-
-
-
-def log_error_to_file(error_log_path, context_message, exception=None):
-    """Logs error with timestamp, optional context, and stack trace."""
-    with open(error_log_path, 'a') as f:
-        f.write(f"\n[ERROR] {datetime.now().isoformat()}\n")
-        f.write(f"Context: {context_message}\n")
-        if exception: 
-            f.write(f"Exception: {str(exception)}\n")
-            f.write(traceback.format_exc())
-        f.write("-" * 60 + "\n")

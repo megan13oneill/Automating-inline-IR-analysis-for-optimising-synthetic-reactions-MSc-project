@@ -39,7 +39,7 @@ def raw_spectrum_logger (client,
                     print(" Probe is now running. Beginning data capture ...")
                     break
             except Exception as e:
-                print(f"Error reading probe status: {e}")
+                    print(f"Error reading probe status: {e}")
             time.sleep(1)
         
         delay_seconds = default_delay
