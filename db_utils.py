@@ -351,8 +351,19 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
             conn.commit()
         conn.close()
 
-# def end_trend(db_path, trend_id):
-#     """ Marks the end of trend with a timestamp."""
-#     with sqlite3.connect(db_path) as conn:
-#         cursor = conn.cursor()
-#         end_time
+def end_trend(db_path, trend_id):
+    """ Marks the end of trend with a timestamp."""
+    try:
+        with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        end_time = datetime.now().isoformat()
+        cursor.execute(
+            "UPDATE Trends SET EndTime = ? WHERE TrendID = ?",
+            (end_time, trend_id)
+        )
+        conn.commit()
+        print(f"Trend {trend_id} marked as ended at {end_time}.")
+    except Exception as e: 
+        log_error_to_file(e, f"Error in end_trend() for TrendID {trend_id}")
+        print(f"Failed to end trend {trend_id}.")
+
