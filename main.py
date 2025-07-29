@@ -2,18 +2,15 @@ import argparse
 from datetime import datetime
 import os
 
-
 from connect import try_connect
 from metadata_utils import get_probe1_data
 from spectrum_logger import raw_spectrum_logger
 from processing_utils import process_and_store_data
-from db_utils import create_new_document, start_trend_sampling, create_new_trend
+from db_utils import create_new_document, start_trend_sampling, create_new_trend, end_trend
 from error_logger import log_error_to_file
-
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 db_path = "ReactIR.db"
-
 
 def main():
     parser = argparse.ArgumentParser(description='Infrared Spectrum Logger CLI')
@@ -23,8 +20,14 @@ def main():
     parser.add_argument('--output-dir', type=str, default='logs', help="Directory for spectra")
     args = parser.parse_args()
 
+    # New CLI args for dynamic OPC UA nodes
+    parser.add_argument('--treated-node', type=str, help="Node ID for treated temperature")
+    parser.add_argument('--peak-node', action='append', help="Peak node(s) in format 'NodeID:Label'")
+
+    args = parser.parse_args()
+
     db_insert_enabled = not args.no_db
-    timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M%S")
+    timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
 
     try:
@@ -57,13 +60,49 @@ def main():
                     raw_spectrum_id="ns=2;s=Local.iCIR.Probe1.SpectraRaw",
                     sampling_interval_id="ns=2;s=Local.iCIR.Probe1.CurrentSamplingInterval",
                     output_dir=args.output_dir,
-                    db_path="ReactIR.db",
+                    db_path=db_path,
                     document_ids=document_ids,
                     probe1_node_id=PROBE_1_NODE_ID,
                     error_log_path=error_log_path
                 )
             except Exception as e:
                 log_error_to_file(error_log_path, "Error during raw spectrum logging", e)
+
+        if args.trend:
+            try:
+                if not args.treated_node or not args.peak_node:
+                    print(f"--treated_node and at least one --peak-node are required for --trend")
+                    return
+                
+                treated_node = client.get_node(args.treated_node)
+
+                peak_nodes = []
+                for item in args.peak_node:
+                    try:
+                        node_id, label = item.split(":", 1)
+                        peak_nodes.append((client.get_node(node_id.strip()), label.strip()))
+                    except ValueError:
+                        log_error_to_file(error_log_path, f"Invalid --peak-node format: {item}")
+                        return
+                    
+                trend_id = create_new_trend(db_path, document_id, user_note="Started from CLI")
+                if trend_id == -1:
+                    print("Failed to create new trend.")
+                    return
+                
+                start_trend_sampling(
+                    db_path=db_path,
+                    trend_id=trend_id,
+                    probe_node=client.get_node(PROBE_1_NODE_ID), 
+                    treated_node=treated_node,
+                    probe_description="Probe 1",
+                    peak_nodes=peak_nodes,
+                    interval_sec=2,
+                    batch_size=10
+                )
+
+            except Exception as e:
+                log_error_to_file(error_log_path, "Error during trend sampling", e)
 
         if args.process:
             try:
@@ -78,6 +117,9 @@ def main():
                 print(f"Successfully processed {processed_count} spectrum files.")
             except Exception as e:
                 log_error_to_file(error_log_path, "Unhandled exception in main()", e)
+
+    except  Exception as e:
+        log_error_to_file(error_log_path, "Unhandled exception in main()", e)
 
 if __name__ == "__main__":
     main()
