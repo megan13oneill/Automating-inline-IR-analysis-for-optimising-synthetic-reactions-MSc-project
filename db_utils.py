@@ -205,62 +205,89 @@ def setup_experiment_metadata(db_path, username, project_name, experiment_name, 
         return {}
 
 # during exp - inserting each spectrum + metadata
-def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectrum_csv_path):
+def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectrum_csv_path, records):
     """Called during the experiment for each spectrum to insert. Probe, Sample, Spectrum file path and timestamp."""
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     try:
-        # 1. Insert Probes
-        description = metadata_dict.get("Probe Description", "No description")
-        cursor.execute("INSERT INTO Probes (Description, DocumentID, LatestTemperatureCelsius, LatestTemperatureTime) VALUES (?, ?, ?, ?)",
-            (
-                description,
-                document_id,
-                metadata_dict.get("LatestTemperatureCelsius"),
-                metadata_dict.get("LatestTemperatureTime")
-            )
-        )
-        probe_id = cursor.lastrowid
+        probes_to_insert = []
+        samples_to_insert = []
+        spectra_to_insert = []
 
-        # 2. Insert Samples
-        cursor.execute(
-            "INSERT INTO Samples (ProbeID, SampleCount, LastSampleTime, CurrentSamplingInterval) VALUES (?, ?, ?, ?)",
-            (
+        for rec in records:
+            metadata = rec['metadata_dict']
+            doc_id = rec['document_id']
+            spec_path = rec['spectrum_csv_path']
+
+            # Prepare probe insert data
+            description = metadata.get("Probe Description", "No description")
+            latest_temp = metadata.get("LatestTemperatureCelsius")
+            latest_temp_time = metadata.get("LatestTemperatureTime")
+
+            probes_to_insert.append((description, doc_id, latest_temp, latest_temp_time))
+
+        # Insert all probes at once
+        cursor.executemany(
+            "INSERT INTO Probes (Dscription, DocumentID, LatestTemperatureCelsius, LatestTemperatureTime) VALUES (?, ?, ?, ?)",
+            probes_to_insert
+        )
+
+        # Get last inserted probe id to calculate all probe IDs (SQLite autoincrement IDs are sequential)
+        last_probe_id = cursor.lastrowid
+        first_probe_id = last_probe_id - len(probes_to_insert) + 1
+
+        for i, rec in enumerate(records):
+            metadata = rec['metadata_dict']
+            spec_path = rec['spectrum_csv_path']
+
+            probe_id = first_probe_id + i
+
+            samples_to_insert.append((
                 probe_id,
-                metadata_dict.get("Sample Count", 0),
-                metadata_dict.get("Last Sample Time", None),
-                metadata_dict.get("Current Sampling Interval", None)
-            )
+                metadata.get("Sample Count", 0),
+                metadata.get("Last Sample Time", None),
+                metadata.get("Current Sampling Interval", None)
+            ))
+
+        # Insert all samples at once
+        cursor.executemany(
+            "INSERT INTO Samples (ProbeID, SampleCount, LastSampleTime, CurrentSamplingInterval) VALUES (?, ?, ?, ?)",
+            samples_to_insert
         )
-        sample_id = cursor.lastrowid
 
-        # 3. Insert Spectrum File Reference
-        base = os.path.basename(spectrum_csv_path)
+        # Similar logic to get last sample ID
+        last_sample_id = cursor.lastrowid
+        first_sample_id = last_sample_id - len(samples_to_insert) + 1
 
-        try:
-            ts_str = base.split("_", 2)[2].rsplit('.', 1)[0]
-            recorded_at = datetime.strptime(ts_str, "%d-%m-%Y_%H-%M-%S_%f").isoformat()
-        except Exception:
-            recorded_at = datetime.now().isoformat()
+        for i, rec in enumerate(records):
+            base = os.path.basename(rec['spectrum_csv_path'])
+            try:
+                ts_str = base.split("_", 2)[2].rsplit('.', 1)[0]
+                recorded_at = datetime.strptime(ts_str, "%d-%m-%Y_%H-%M-%S_%f").isoformat()
+            except Exception:
+                recorded_at = datetime.now().isoformat()
 
-        cursor.execute(
-            "INSERT INTO Spectra (SampleID, Type, FilePath, RecordedAt) VALUES (?, ?, ?, ?)",
-            (
-                sample_id,
+            spectra_to_insert.append((
+                first_sample_id + i,
                 'raw',
-                spectrum_csv_path,
+                rec['spectrum_csv_path'],
                 recorded_at
-            )
+            ))
+
+        # Insert all spectra at once
+        cursor.executemany(
+            "INSERT INTO Spectra (SampleID, Type, FilePath, RecordedAt) VALUES (?, ?, ?, ?)",
+            spectra_to_insert
         )
 
         conn.commit()
-        print(f"✅ Inserted metadata + spectrum path: {base}")
+        print(f"✅ Inserted batch of {len(records)} probes, samples and spectra.")
 
     except Exception as e:
-        log_error_to_file(e, "Error in insert_probe_sample_and_spectrum()")
-        print(f"❌ Error during DB insert: {e}")
+        log_error_to_file(e, "Error in insert_probe_samples_and_spectra_batch()")
+        print(f"❌ Error during batch DB insert: {e}")
         conn.rollback()
 
     finally:
