@@ -5,194 +5,207 @@ import time
 from opcua import Client
 import traceback
 
+from error_logger import log_error_to_file
+
 db_path = "ReactIR.db"
 
 def setup_database(db_path="ReactIR.db"):
-# Connect to SQLite DB
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-    
-    # PRAGMA commands to boost performance.
-    cursor.execute("PRAGMA journal_mode=WAL;") # better concurrency
-    cursor.execute("PRAGMA synchronous=NORMAL;") # faster writes, still resonably safe
-    cursor.execute("PRAGMA temp_store=MEMORY;") # Temp tables stay in RAM
+    try:
+        # Connect to SQLite DB
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+        
+        # PRAGMA commands to boost performance.
+        cursor.execute("PRAGMA journal_mode=WAL;") # better concurrency
+        cursor.execute("PRAGMA synchronous=NORMAL;") # faster writes, still resonably safe
+        cursor.execute("PRAGMA temp_store=MEMORY;") # Temp tables stay in RAM
 
-# Create tables if they don't exist
-    cursor.executescript("""
-    -- Create Users table
-    CREATE TABLE IF NOT EXISTS Users (
-        UserID INTEGER PRIMARY KEY,
-        Username TEXT NOT NULL UNIQUE
-    );
+    # Create tables if they don't exist
+        cursor.executescript("""
+        -- Create Users table
+        CREATE TABLE IF NOT EXISTS Users (
+            UserID INTEGER PRIMARY KEY,
+            Username TEXT NOT NULL UNIQUE
+        );
 
-    -- Create Projects table
-    CREATE TABLE IF NOT EXISTS Projects (
-        ProjectID INTEGER PRIMARY KEY,
-        Name TEXT NOT NULL,
-        UserID INTEGER,
-        FOREIGN KEY (UserID) REFERENCES Users(UserID)
-    );
+        -- Create Projects table
+        CREATE TABLE IF NOT EXISTS Projects (
+            ProjectID INTEGER PRIMARY KEY,
+            Name TEXT NOT NULL,
+            UserID INTEGER,
+            FOREIGN KEY (UserID) REFERENCES Users(UserID)
+        );
 
-    -- Create Experiments table
-    CREATE TABLE IF NOT EXISTS Experiments (
-        ExperimentID INTEGER PRIMARY KEY,
-        Name TEXT NOT NULL,
-        ProjectID INTEGER,
-        FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
-    );
+        -- Create Experiments table
+        CREATE TABLE IF NOT EXISTS Experiments (
+            ExperimentID INTEGER PRIMARY KEY,
+            Name TEXT NOT NULL,
+            ProjectID INTEGER,
+            FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
+        );
 
-    -- Create Documents table
-    CREATE TABLE IF NOT EXISTS Documents (
-        DocumentID INTEGER PRIMARY KEY AUTOINCREMENT,
-        Name TEXT NOT NULL,
-        ExperimentID INTEGER,
-        FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
-    );
+        -- Create Documents table
+        CREATE TABLE IF NOT EXISTS Documents (
+            DocumentID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Name TEXT NOT NULL,
+            ExperimentID INTEGER,
+            FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
+        );
 
-    -- Create Probes table
-    CREATE TABLE IF NOT EXISTS Probes (
-        ProbeID INTEGER PRIMARY KEY,
-        Description TEXT NOT NULL,
-        DocumentID INTEGER,
-        LatestTemperatureCelsius REAL,
-        LatestTemperatureTime TEXT,
-        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-    );
+        -- Create Probes table
+        CREATE TABLE IF NOT EXISTS Probes (
+            ProbeID INTEGER PRIMARY KEY,
+            Description TEXT NOT NULL,
+            DocumentID INTEGER,
+            LatestTemperatureCelsius REAL,
+            LatestTemperatureTime TEXT,
+            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+        );
 
-    -- Create Samples table
-    CREATE TABLE IF NOT EXISTS Samples (
-        SampleID INTEGER PRIMARY KEY,
-        ProbeID INTEGER,
-        SampleCount INTEGER,
-        LastSampleTime TEXT,
-        CurrentSamplingInterval INTEGER,
-        FOREIGN KEY (ProbeID) REFERENCES Probes(ProbeID)
-    );
+        -- Create Samples table
+        CREATE TABLE IF NOT EXISTS Samples (
+            SampleID INTEGER PRIMARY KEY,
+            ProbeID INTEGER,
+            SampleCount INTEGER,
+            LastSampleTime TEXT,
+            CurrentSamplingInterval INTEGER,
+            FOREIGN KEY (ProbeID) REFERENCES Probes(ProbeID)
+        );
 
-    -- Create Spectra table
-    CREATE TABLE IF NOT EXISTS Spectra (
-        SpectraID INTEGER PRIMARY KEY,
-        SampleID INTEGER,
-        Type TEXT CHECK (Type IN ('raw', 'background', 'processed', 'reference')),
-        FilePath TEXT NOT NULL,
-        RecordedAt TEXT,
-        FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
-    );
+        -- Create Spectra table
+        CREATE TABLE IF NOT EXISTS Spectra (
+            SpectraID INTEGER PRIMARY KEY,
+            SampleID INTEGER,
+            Type TEXT CHECK (Type IN ('raw', 'background', 'processed', 'reference')),
+            FilePath TEXT NOT NULL,
+            RecordedAt TEXT,
+            FOREIGN KEY (SampleID) REFERENCES Samples(SampleID)
+        );
 
-    -- Create Reagents table
-    CREATE TABLE IF NOT EXISTS Reagents (
-        ReagentID INTEGER PRIMARY KEY,
-        DocumentID INTEGER,
-        CommonName TEXT NOT NULL,
-        InChI TEXT,
-        CASNumber TEXT,
-        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-    );
+        -- Create Reagents table
+        CREATE TABLE IF NOT EXISTS Reagents (
+            ReagentID INTEGER PRIMARY KEY,
+            DocumentID INTEGER,
+            CommonName TEXT NOT NULL,
+            InChI TEXT,
+            CASNumber TEXT,
+            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+        );
 
-    -- Create Trends table (represents a collection session e.g. user selects "Start Recording')
-    CREATE TABLE IF NOT EXISTS Trends (
-        TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
-        DocumentID INTEGER,
-        StartTime TEXT,
-        EndTime TEXT,
-        Usernote TEXT,
-        FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
-    );
+        -- Create Trends table (represents a collection session e.g. user selects "Start Recording')
+        CREATE TABLE IF NOT EXISTS Trends (
+            TrendID INTEGER PRIMARY KEY AUTOINCREMENT,
+            DocumentID INTEGER,
+            StartTime TEXT,
+            EndTime TEXT,
+            Usernote TEXT,
+            FOREIGN KEY (DocumentID) REFERENCES Documents(DocumentID)
+        );
 
-    -- Create Probe Temps table linked to Trends (Stores time-series probe data linked to a trend)
-    CREATE TABLE IF NOT EXISTS ProbeTempSamples (
-        SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
-        TrendID INTEGER,
-        Timestamp TEXT,
-        Description TEXT,
-        Source TEXT,
-        Value REAL,
-        TreatedValue REAL,
-        FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
-    );
-    
-    -- Create Peak table (stores time-series user peak data (multiple OPC nodes per sample))
-    CREATE TABLE IF NOT EXISTS PeakSamples (
-        SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
-        TrendID integer,
-        Timestamp TEXT,
-        NodeID TEXT,
-        Value REAL,
-        Label TEXT,
-        FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
-    );
-    """)
+        -- Create Probe Temps table linked to Trends (Stores time-series probe data linked to a trend)
+        CREATE TABLE IF NOT EXISTS ProbeTempSamples (
+            SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
+            TrendID INTEGER,
+            Timestamp TEXT,
+            Description TEXT,
+            Source TEXT,
+            Value REAL,
+            TreatedValue REAL,
+            FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
+        );
+        
+        -- Create Peak table (stores time-series user peak data (multiple OPC nodes per sample))
+        CREATE TABLE IF NOT EXISTS PeakSamples (
+            SampleID INTEGER PRIMARY KEY AUTOINCREMENT,
+            TrendID integer,
+            Timestamp TEXT,
+            NodeID TEXT,
+            Value REAL,
+            Label TEXT,
+            FOREIGN KEY (TrendID) REFERENCES Trends(TrendID)
+        );
+        """)
 
-    conn.commit()
+        conn.commit()
 
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID;)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID;)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_timestamp ON ProbeTempSamples (Timestamp);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_timestamp ON PeakSamples (Timestamp);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_experiment ON Documents (ExperimentID);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_probes_document ON Probes (DocumentID);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_trends_document ON Trends (DocumentID);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID;)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID;)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_timestamp ON ProbeTempSamples (Timestamp);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_timestamp ON PeakSamples (Timestamp);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_experiment ON Documents (ExperimentID);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probes_document ON Probes (DocumentID);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_trends_document ON Trends (DocumentID);")
 
-    conn.commit()
-    print("Database setup completed.")
+        conn.commit()
+        print("Database setup completed.")
+
+    except Exception as e: 
+        log_error_to_file(e, "Error in setup_database()")
 
 def create_new_document(db_path: str, name: str, experiment_id: int) -> int:
     """ Insert a new document entry and return the new DocumentID."""
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            """ INSERT INTO Documents (Name, ExperimentID) VALUES (?, ?)""",
-            (name, experiment_id)
-        )
-        conn.commit()
-        return cursor.lastrowid
+    try:
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """ INSERT INTO Documents (Name, ExperimentID) VALUES (?, ?)""",
+                (name, experiment_id)
+            )
+            conn.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        log_error_to_file(e, "Error in create_new_document()")
+        return -1
 
 def get_or_create(cursor, table, unique_col, unique_val, defaults=None):
-
     """ Get the ID if exists, otherwise insert and return the new ID."""
-
-    table_id_column = f"{table[:-1]}ID" if table.endswith("s") else f"{table}ID"
-    cursor.execute(f"SELECT {table_id_column} FROM {table} WHERE {unique_col} = ?", (unique_val,))
-    row = cursor.fetchone()
-    if row:
-        return row[0]
-    else:
-        columns = [unique_col] + (list(defaults.keys()) if defaults else [])
-        values = [unique_val] + (list(defaults.values()) if defaults else [])
-        placeholders = ', '.join(['?'] * len(values))
-        cursor.execute(
-            f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
-            values
-        )
-        return cursor.lastrowid
+    
+    try: 
+        table_id_column = f"{table[:-1]}ID" if table.endswith("s") else f"{table}ID"
+        cursor.execute(f"SELECT {table_id_column} FROM {table} WHERE {unique_col} = ?", (unique_val,))
+        row = cursor.fetchone()
+        if row:
+            return row[0]
+        else:
+            columns = [unique_col] + (list(defaults.keys()) if defaults else [])
+            values = [unique_val] + (list(defaults.values()) if defaults else [])
+            placeholders = ', '.join(['?'] * len(values))
+            cursor.execute(
+                f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
+                values
+            )
+            return cursor.lastrowid
+    except Exception as e: 
+        log_error_to_file(e, f"Error in get_or_create() for table '{table}' with value '{unique_val}'")
+        raise
 
 def setup_experiment_metadata(db_path, username, project_name, experiment_name, document_name):
-
     """ Called once at the start before logging. Returns all parent-level IDs (User, Project, Eperiment, Document.)"""
+    try: 
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+        # Insert or get each ID
+        user_id = get_or_create(cursor, "Users", "Username", username)
+        project_id = get_or_create(cursor, "Projects", "Name", project_name, {"UserID": user_id})
+        experiment_id = get_or_create(cursor, "Experiments", "Name", experiment_name, {"ProjectID": project_id})
+        document_id = get_or_create(cursor, "Documents", "Name", document_name, {"ExperimentID": experiment_id})
 
-    # Insert or get each ID
-    user_id = get_or_create(cursor, "Users", "Username", username)
-    project_id = get_or_create(cursor, "Projects", "Name", project_name, {"UserID": user_id})
-    experiment_id = get_or_create(cursor, "Experiments", "Name", experiment_name, {"ProjectID": project_id})
-    document_id = get_or_create(cursor, "Documents", "Name", document_name, {"ExperimentID": experiment_id})
+        conn.commit()
+        conn.close()
 
-    conn.commit()
-    conn.close()
-
-    return {
-        "UserID": user_id,
-        "ProjectID": project_id,
-        "ExperimentID": experiment_id,
-        "DocumentID": document_id
-    }
+        return {
+            "UserID": user_id,
+            "ProjectID": project_id,
+            "ExperimentID": experiment_id,
+            "DocumentID": document_id
+        }
+    except Exception as e:
+        log_error_to_file(e, "Error in setup_experiment_metadata()")
+        return {}
 
 # during exp - inserting each spectrum + metadata
-
 def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectrum_csv_path):
-
     """Called during the experiment for each spectrum to insert. Probe, Sample, Spectrum file path and timestamp."""
 
     conn = sqlite3.connect(db_path)
@@ -225,6 +238,7 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
 
         # 3. Insert Spectrum File Reference
         base = os.path.basename(spectrum_csv_path)
+
         try:
             ts_str = base.split("_", 2)[2].rsplit('.', 1)[0]
             recorded_at = datetime.strptime(ts_str, "%d-%m-%Y_%H-%M-%S_%f").isoformat()
@@ -245,6 +259,7 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
         print(f"✅ Inserted metadata + spectrum path: {base}")
 
     except Exception as e:
+        log_error_to_file(e, "Error in insert_probe_sample_and_spectrum()")
         print(f"❌ Error during DB insert: {e}")
         conn.rollback()
 
@@ -252,19 +267,24 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
         conn.close()
 
 def create_new_trend(db_path, document_id, user_note=("")):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO Trends (DocumentID, StartTime, Usernote)
-        VALUES (?, ?, ?)
-    """, (document_id, datetime.now().isoformat(), user_note))
-    trend_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return trend_id
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO Trends (DocumentID, StartTime, Usernote)
+            VALUES (?, ?, ?)
+        """, (document_id, datetime.now().isoformat(), user_note))
+        trend_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return trend_id
+    except Exception as e: 
+        log_error_to_file(e, "Error in create_new_trend()")
+        return -1
+    finally:
+        conn.close()
 
 def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_description, peak_nodes, interval_sec=2, batch_size=10):
-    
     """ Samples both probe and peak values at a fixed interval and stores in db."""
 
     conn = sqlite3.connect(db_path)
@@ -322,6 +342,7 @@ def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_desc
         conn.commit()
     
     except Exception as e: 
+        log_error_to_file(e, "Error in start_trend_sampling()")
         print(f"Error during sampling: {e}")
         conn.rollback()
 
