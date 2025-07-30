@@ -8,6 +8,9 @@ import traceback
 from error_logger import log_error_to_file
 
 db_path = "ReactIR.db"
+PROBE_COLUMNS = ["Description", "DocumentID", "LatestTemperatureCelsius", "LatestTemperatureTime"]
+SAMPLE_COLUMNS = ["ProbeID", "SampleCount", "LastSampleTime", "CurrentSamplingInterval"]
+SPECTRA_COLUMNS = ["SampleID", "Type", "FilePath", "RecordedAt"]
 
 def setup_database(db_path="ReactIR.db"):
     try:
@@ -205,90 +208,59 @@ def setup_experiment_metadata(db_path, username, project_name, experiment_name, 
         return {}
 
 # during exp - inserting each spectrum + metadata
-def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectrum_csv_path, records):
+def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectrum_csv_path):
     """Called during the experiment for each spectrum to insert. Probe, Sample, Spectrum file path and timestamp."""
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
     try:
-        probes_to_insert = []
-        samples_to_insert = []
-        spectra_to_insert = []
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+       
+            # Prepare probe data to be inserted. 
+            probe_values = [
+                metadata_dict.get("Probe Description", "No description"),
+                document_id,
+                metadata_dict.get("LatestTemperatureCelsius"),
+                metadata_dict.get("LatestTemperatureTime")
+            ]
+            probe_sql = f"INSERT INTO Probes ({', '.join(PROBE_COLUMNS)}) VALUES ({', '.join('?' for _ in PROBE_COLUMNS)})"
+            cursor.execute(probe_sql, probe_values)
+            probe_id = cursor.lastrowid
 
-        for rec in records:
-            metadata = rec['metadata_dict']
-            doc_id = rec['document_id']
-            spec_path = rec['spectrum_csv_path']
-
-            # Prepare probe insert data
-            description = metadata.get("Probe Description", "No description")
-            latest_temp = metadata.get("LatestTemperatureCelsius")
-            latest_temp_time = metadata.get("LatestTemperatureTime")
-
-            probes_to_insert.append((description, doc_id, latest_temp, latest_temp_time))
-
-        # Insert all probes at once
-        cursor.executemany(
-            "INSERT INTO Probes (Dscription, DocumentID, LatestTemperatureCelsius, LatestTemperatureTime) VALUES (?, ?, ?, ?)",
-            probes_to_insert
-        )
-
-        # Get last inserted probe id to calculate all probe IDs (SQLite autoincrement IDs are sequential)
-        last_probe_id = cursor.lastrowid
-        first_probe_id = last_probe_id - len(probes_to_insert) + 1
-
-        for i, rec in enumerate(records):
-            metadata = rec['metadata_dict']
-            spec_path = rec['spectrum_csv_path']
-
-            probe_id = first_probe_id + i
-
-            samples_to_insert.append((
+            # Prepare values for Samples
+            sample_values = [
                 probe_id,
-                metadata.get("Sample Count", 0),
-                metadata.get("Last Sample Time", None),
-                metadata.get("Current Sampling Interval", None)
-            ))
+                metadata_dict.get("Sample Count", 0),
+                metadata_dict.get("Last Sample Time"),
+                metadata_dict.get("Current Sampling Interval")
+            ]
+            sample_sql = f"INSERT INTO Samples ({', '.join(SAMPLE_COLUMNS)}) VALUES ({', '.join('?' for _ in SAMPLE_COLUMNS)})"
+            cursor.execute(sample_sql, sample_values)
+            sample_id = cursor.lastrowid
 
-        # Insert all samples at once
-        cursor.executemany(
-            "INSERT INTO Samples (ProbeID, SampleCount, LastSampleTime, CurrentSamplingInterval) VALUES (?, ?, ?, ?)",
-            samples_to_insert
-        )
-
-        # Similar logic to get last sample ID
-        last_sample_id = cursor.lastrowid
-        first_sample_id = last_sample_id - len(samples_to_insert) + 1
-
-        for i, rec in enumerate(records):
+        # Extract timestamp from filename, fallback to now
+        try:
             base = os.path.basename(rec['spectrum_csv_path'])
-            try:
-                ts_str = base.split("_", 2)[2].rsplit('.', 1)[0]
-                recorded_at = datetime.strptime(ts_str, "%d-%m-%Y_%H-%M-%S_%f").isoformat()
-            except Exception:
+            ts_str = base.split("_", 2)[2].rsplit('.', 1)[0]
+            recorded_at = datetime.strptime(ts_str, "%d-%m-%Y_%H-%M-%S_%f").isoformat()
+        except Exception:
                 recorded_at = datetime.now().isoformat()
 
-            spectra_to_insert.append((
-                first_sample_id + i,
-                'raw',
-                rec['spectrum_csv_path'],
-                recorded_at
-            ))
-
-        # Insert all spectra at once
-        cursor.executemany(
-            "INSERT INTO Spectra (SampleID, Type, FilePath, RecordedAt) VALUES (?, ?, ?, ?)",
-            spectra_to_insert
-        )
+        # Insert spectrum
+        spectra_values = [
+            sample_id,
+            "raw",
+            spectrum_csv_path,
+            recorded_at
+        ]
+        spectral_sql = f"INSERT INTO Spectra ({', '.join(SPECTRA_COLUMNS)}) VALUES  ({', '.join('?' for _ in SPECTRA_COLUMNS)})"
+        cursor.execute(spectral_sql, spectra_values)
 
         conn.commit()
-        print(f"✅ Inserted batch of {len(records)} probes, samples and spectra.")
+        print(f"✅ Inserted 1 spectrum for DocumentID {document_id}.")
 
     except Exception as e:
         log_error_to_file(e, "Error in insert_probe_samples_and_spectra_batch()")
-        print(f"❌ Error during batch DB insert: {e}")
-        conn.rollback()
+        print(f"❌ Error during inserting spectrum: {e}")
 
     finally:
         conn.close()
@@ -399,14 +371,14 @@ def end_trend(db_path, trend_id):
     """ Marks the end of trend with a timestamp."""
     try:
         with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        end_time = datetime.now().isoformat()
-        cursor.execute(
-            "UPDATE Trends SET EndTime = ? WHERE TrendID = ?",
-            (end_time, trend_id)
-        )
-        conn.commit()
-        print(f"Trend {trend_id} marked as ended at {end_time}.")
+            cursor = conn.cursor()
+            end_time = datetime.now().isoformat()
+            cursor.execute(
+                "UPDATE Trends SET EndTime = ? WHERE TrendID = ?",
+                (end_time, trend_id)
+            )
+            conn.commit()
+            print(f"Trend {trend_id} marked as ended at {end_time}.")
     except Exception as e: 
         log_error_to_file(e, f"Error in end_trend() for TrendID {trend_id}")
         print(f"Failed to end trend {trend_id}.")
