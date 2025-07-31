@@ -7,7 +7,10 @@ log_file_path = "error_log.txt"
 def log_error_to_file(error_log_path=log_file_path, context_message="No context provided", exception=None):
     """Logs error with timestamp, optional context, and stack trace."""
     try:
-        os.makedirs(os.path.dirname(error_log_path), exist_ok=True)
+        log_dir = os.path.dirname(error_log_path)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+            
         timestamp = datetime.now().strftime("%d-%m%Y_%H:%M:%S")
 
         log_entry = (
