@@ -156,6 +156,6 @@ def load_and_preview_db(file_path, num_rows=5):
 
 if __name__ == "__main__":
     main()
-    db_path = 'ReactIR.db'
-    load_and_preview_db(db_path)
+    #db_path = 'ReactIR.db'
+    #load_and_preview_db(db_path)
 
