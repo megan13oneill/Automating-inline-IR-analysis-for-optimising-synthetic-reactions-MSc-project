@@ -25,6 +25,7 @@ def main():
     # New CLI args for dynamic OPC UA nodes
     parser.add_argument('--treated-node', type=str, help="Node ID for treated temperature")
     parser.add_argument('--peak-node', action='append', help="Peak node(s) in format 'NodeID:Label'")
+    parser.add_argument('--trend', action='store_true', help="Start trend sampling")
 
     args = parser.parse_args()
 
@@ -33,7 +34,7 @@ def main():
     error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
 
     try:
-        with try_connect() as client:
+        with try_connect(error_log_path=error_log_path) as client:
             if not client: 
                 print("Failed to connect to OPC UA server.")
                 return
