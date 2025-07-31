@@ -1,6 +1,8 @@
 import argparse
 from datetime import datetime
 import os
+import sqlite3
+import pandas as pd
 
 from connect import try_connect
 from metadata_utils import get_probe1_data
@@ -121,5 +123,39 @@ def main():
     except  Exception as e:
         log_error_to_file(error_log_path, "Unhandled exception in main()", e)
 
+def load_and_preview_db(file_path, num_rows=5):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # get all table names
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = [row[0] for row in cursor.fetchall()]
+
+    if not tables: 
+        print("No tables found in the database.")
+        return
+    
+    for table_name in tables: 
+        print(f"\n--- Table: {table_name} ---")
+
+        # load db into a df 
+        df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
+
+        # print the headers
+        print("Header:")
+        print(df.columns.to_list())
+
+        # print last N rows 
+        print(f"\nLast {num_rows} rows:")
+        print(df.tail(num_rows))
+
+        print("-" * 40)
+
+    conn.close()
+
+
 if __name__ == "__main__":
     main()
+    db_path = 'ReactIR.db'
+    load_and_preview_db(db_path)
+
