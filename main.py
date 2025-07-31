@@ -55,6 +55,8 @@ def main():
         except Exception as e:
             log_error_to_file(fallback_log_path, "Failed during probe metadata retrieval or document creation", e)
             return
+        except KeyboardInterrupt:
+            print("Program interrupted by user.")
 
 
         if args.log:
