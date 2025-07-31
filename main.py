@@ -20,21 +20,21 @@ def main():
     parser.add_argument('--process', action='store_true', help="Process and plot spectra")
     parser.add_argument('--no-db', action='store_true', help="Skip database insert")
     parser.add_argument('--output-dir', type=str, default='logs', help="Directory for spectra")
-    args = parser.parse_args()
-
-    # New CLI args for dynamic OPC UA nodes
     parser.add_argument('--treated-node', type=str, help="Node ID for treated temperature")
     parser.add_argument('--peak-node', action='append', help="Peak node(s) in format 'NodeID:Label'")
     parser.add_argument('--trend', action='store_true', help="Start trend sampling")
 
     args = parser.parse_args()
 
+    os.makedirs("logs", exist_ok=True)
+
     db_insert_enabled = not args.no_db
+    fallback_log_path = os.path.join("logs", "error_log_fallback.txt")
+
     timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-    error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
 
     try:
-        with try_connect(error_log_path=error_log_path) as client:
+        with try_connect(error_log_path=fallback_log_path) as client:
             if not client: 
                 print("Failed to connect to OPC UA server.")
                 return
@@ -48,9 +48,12 @@ def main():
 
             document_id = create_new_document(db_path, description="CLI logging session")
             document_ids = {"DocumentID": document_id}
+
+            # set error_log_path with doc IDs
+            error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
         
         except Exception as e:
-            log_error_to_file(error_log_path, "Failed during probe metadata retrieval or document creation", e)
+            log_error_to_file(fallback_log_path, "Failed during probe metadata retrieval or document creation", e)
             return
 
 
@@ -105,7 +108,7 @@ def main():
                 )
 
             except Exception as e:
-                log_error_to_file(error_log_path, "Error during trend sampling", e)
+                log_error_to_file(fallback_log_path, "Error during trend sampling", e)
 
         if args.process:
             try:
@@ -119,7 +122,7 @@ def main():
                 )
                 print(f"Successfully processed {processed_count} spectrum files.")
             except Exception as e:
-                log_error_to_file(error_log_path, "Unhandled exception in main()", e)
+                log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
 
     except  Exception as e:
         log_error_to_file(error_log_path, "Unhandled exception in main()", e)
