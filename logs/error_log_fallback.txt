@@ -26,3 +26,14 @@ Traceback (most recent call last):
        ^^^^^^^^^^^^^
 UnboundLocalError: cannot access local variable 'allowed_nodes' where it is not associated with a value
 ------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 01-082025_12:11:33
+Context: Unhandled exception in main()
+Exception: create_new_document() got an unexpected keyword argument 'description'
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 48, in main
+    document_id = create_new_document(db_path, description="Automated logging session")
+TypeError: create_new_document() got an unexpected keyword argument 'description'
+------------------------------------------------------------
