@@ -24,6 +24,25 @@ db_path = "ReactIR.db"
 logs_dir = "logs"
 output_dir = "logs"
 
+def wait_for_node_operational(node, timeout_sec=60, poll_interval=3):
+    """ Wait untill a node's value can be read without BadOutOfService error or timeout."""
+    start_time = time.time()
+    while True:
+        try:
+            op_node = node.get_value()
+            return True
+        except Exception as e: 
+            if "BadOutOfService" in str(e):
+                elasped = time.time() - start_time
+                if elasped > timeout_sec:
+                    print(f"Timeout waiting for node {node} to become operational.")
+                    return False
+                print(f"Node {node} not operational yet, retrying in {poll_interval}s...")
+                time.sleep(poll_interval)
+            else:
+                print(f"Unexpected error reading node {node}: {e}")
+                return False
+
 def main():
     timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     os.makedirs("logs", exist_ok=True)
@@ -37,13 +56,20 @@ def main():
             return
                 
         print(f"Waiting for experiment to fully initialise...")
-        time.sleep(10) # Delay to allow cloned experiment to populate nodes.
+        # Delay to allow cloned experiment to populate nodes.
+        probe1_node = client.get_node(PROBE_1_NODE_ID)
+        if not wait_for_node_operational(probe1_node, timeout_sec=90):
+            print(f"Probe 1 node not operational, exiting.")
+            return
     
         # Get probe metadata once connected
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
         print("\nProbe 1 Metadata:")
         for name, value in probe_data:
             print(f"{name}: {value}")
+
+        print("\nAll metadata keys:")
+        print([name for name, _ in probe_data])
 
         experiment_name = None
         for name, value in probe_data:
@@ -63,23 +89,34 @@ def main():
         
         document_ids = {"DocumentID": document_id}
 
-        # set error_log_path with doc IDs
-        error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
-
         # get treated node
         treated_node = client.get_node(TREND_NODE_ID)
+        if not wait_for_node_operational(treated_node, timeout_sec=60):
+            print("Trend not operational, exiting.")
+            return
+
         peak_nodes = []
 
-        # need to dynamically get peaks picked that are child nodes. 
-        for child in treated_node.get_children():
-            try:
-                peak_value_node = child.get_child("2:PeakValue")
-                label_node = child.get_child("2:Name")
+        children = treated_node.get_children()
+        print(f"Found {len(children)} children in treated_node")
+
+        for child in children:
+            try: 
+                # debug print children of child node
+                grandchildren = child.getchildren()
+                print(f"Child node {child} has children: {grandchildren}")
+
+                peak_value_node = child.get_child("2:PeakValue")    # need to change this name
+                label_node = child.get_child("2:Name")          # need to change this too.
                 label = label_node.get_value()
                 peak_nodes.append((peak_value_node, label))
                 print(f"Found peak: {label}")
             except Exception as e:
-                log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
+                try: 
+                    log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
+                except Exception as log_e: 
+                    print(f"Failed to log error: {log_e}")
+                print(f"Error reading child node {child}: {e}")
 
         if not peak_nodes:
             print("No peak nodes found. Exiting.")
@@ -107,7 +144,10 @@ def main():
                     stop_event=stop_event
                 )
             except Exception as e:
-                log_error_to_file(error_log_path, "Error in raw_spectrum_logger thread", e)
+                try:
+                    log_error_to_file(error_log_path, "Error in raw_spectrum_logger thread", e)
+                except Exception as log_e:
+                    print(f"Failed to log error in raw_logger thread: {log_e}")
         
         def run_trend_sampler():
             try:
@@ -125,17 +165,21 @@ def main():
                     stop_event=stop_event
                 )
             except Exception as e: 
-                log_error_to_file(error_log_path, "Error in trend sampling thread", e)
+                try:
+                    log_error_to_file(error_log_path, "Error in trend sampling thread", e)
+                except Exception as log_e:
+                    print(f"Failed to log error in trend sampler thread: {log_e}")
 
-            raw_thread = threading.Thread(target=run_raw_logger, daemon=True)
-            trend_thread = threading.Thread(target=run_trend_sampler, daemon=True)
+        raw_thread = threading.Thread(target=run_raw_logger, daemon=True)
+        trend_thread = threading.Thread(target=run_trend_sampler, daemon=True)
 
-            raw_thread.start()
-            trend_thread.start()
+        raw_thread.start()
+        trend_thread.start()
 
-            print("Monitoring probe status...")
-            probe_status_node = client.get_node(PROBE_STATUS_ID)
-            while True:
+        print("Monitoring probe status...")
+        probe_status_node = client.get_node(PROBE_STATUS_ID)
+        while True:
+            try:
                 status = probe_status_node.get_value()
                 print(f"Probe running: {status}")
                 if not status:
@@ -146,27 +190,39 @@ def main():
                     trend_thread.join()
                     break
                 time.sleep(5)
+            except Exception as e:
+                try: 
+                    log_error_to_file(error_log_path, "Error reading probe status", e)
+                except Exception as log_e:
+                    print(f"Failed to log error reading probe status: {log_e}")
+                    break
 
-            print("Processing raw spectrum files...")
-            processed_count = process_and_store_data(
-                input_dir=logs_dir,
-                output_dir="processed",
-                smooth=True,
-                window_length=11,
-                polyorder=2
-            )
-            print(f"Processed {processed_count} spectrum files.")
+        print("Processing raw spectrum files...")
+        processed_count = process_and_store_data(
+            input_dir=logs_dir,
+            output_dir="processed",
+            smooth=True,
+            window_length=11,
+            polyorder=2
+        )
+        print(f"Processed {processed_count} spectrum files.")
 
     except KeyboardInterrupt:
         print("Logging intrrupted by user (Ctrl+C).")
     except Exception as e: 
-        log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
+        try:
+            log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
+        except Exception as log_e:
+            print(f"Failed to log unhandled exception: {log_e}")
     finally:
         try:
             client.disconnect()
             print("Disconnected from OPC UA server.")
         except Exception as e:
-            log_error_to_file(error_log_path, "Error during disconnection", e)
+            try:
+                log_error_to_file(error_log_path, "Error during disconnection", e)
+            except Exception as log_e:
+                print(f"Failed to log error during disconnection: {log_e}")
 
 
 def load_and_preview_db(file_path=db_path, num_rows=5):
