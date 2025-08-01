@@ -1,7 +1,5 @@
-from opcua import Client
 import time
-from contextlib import contextmanager
-
+from opcua import Client
 from error_logger import log_error_to_file
 
 # OPC UA server endpoint for the Mettler Toldeo IR Flow cell. 
@@ -14,6 +12,7 @@ def try_connect(server_url=SERVER_URL, max_retries=3, delay=2, error_log_path=No
     """
 
     client = Client(server_url)
+
     for attempt in range(1, max_retries + 1):
         try:
             client.connect()
@@ -24,18 +23,10 @@ def try_connect(server_url=SERVER_URL, max_retries=3, delay=2, error_log_path=No
             print(f"{error_message}: {e}")
             if error_log_path:
                 log_error_to_file(error_log_path, error_message, e)
+            
             if attempt < max_retries:
                 time.sleep(delay)   # wait before next attempt
             else:
                 print("All connection attempts failed.")
                 return None
-# finally:
-#     if connected:
-#         try:
-#             client.disconnect()
-#             print("Disconnected from OPC UA server.")
-#         except Exception as e:
-#             if error_log_path:
-#                 log_error_to_file(error_log_path, "Error during OPC UA disconnection", e)
-
 
