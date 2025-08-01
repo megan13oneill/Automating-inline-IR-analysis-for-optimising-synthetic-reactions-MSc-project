@@ -6,8 +6,12 @@ def get_probe1_data (client, probe1_node_id):
     """ queries selected child nodes of Probe1 node and returns 
         their nodes and values.
     """
-    if allowed_nodes is None:
-        allowed_nodes = {"Probe Name", "Probe Description", "Probe Status", "Document Name", "Experiment Name", "Suffix", "User Name", "Project Name", "Sample Count", "Current Sampling Interval", "Last Sample Time", "Last Sample Raw Spectra", "Last Sample Background Spectra", "Last Sample Treated Spectra"}
+    allowed_nodes = {
+        "Probe Name", "Probe Description", "Probe Status", "Document Name",
+        "Experiment Name", "Suffix", "User Name", "Project Name", "Sample Count",
+        "Current Sampling Interval", "Last Sample Time", "Last Sample Raw Spectra",
+        "Last Sample Background Spectra", "Last Sample Treated Spectra"
+    }
 
     probe1_results = []
 
