@@ -20,68 +20,99 @@ def main():
     timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     os.makedirs("logs", exist_ok=True)
     fallback_log_path = os.path.join("logs", "error_log_fallback.txt")
+    error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
 
+
+    client = try_connect(error_log_path=fallback_log_path) as client:
+    if not client: 
+        print("Failed to connect to OPC UA server.")
+        return
+            
     try:
-        with try_connect(error_log_path=fallback_log_path) as client:
-            if not client: 
-                print("Failed to connect to OPC UA server.")
-                return
-            
-            print(f"Waiting for experiment to fully initialise...")
-            time.sleep(10) # Delay to allow cloned experiment to populate nodes.
+        print(f"Waiting for experiment to fully initialise...")
+        time.sleep(10) # Delay to allow cloned experiment to populate nodes.
+    
+        # Get probe metadata once connected
+        probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
+        print("\nProbe 1 Metadata:")
+        for name, value in probe_data:
+            print(f"{name}: {value}")
+
+        # create document entry in DB.
+        document_id = create_new_document(db_path, description="Automated logging session")
+        document_ids = {"DocumentID": document_id}
+
+        # set error_log_path with doc IDs
+        error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
+
+        # get treated node
+        treated_node = client.get_node(TREND_NODE_ID)
+        peak_nodes = []
+
+        # need to dynamically get peaks picked that are child nodes. 
+        for child in treated_node.get_children():
+            try:
+                peak_value_node = child.get_child("2:PeakValue")
+                label_node = child.get_child("2:Name")
+                label = label_node.get_value()
+                peak_nodes.append((peak_value_node, label))
+                print(f"Found peak: {label}")
+            except Exception as e:
+                log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
+
+        if not peak_nodes:
+            print("No peak nodes found. Exiting.")
+            return
         
-            # Get probe metadata once connected
-            probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
-            print("\nProbe 1 Metadata:")
-            for name, value in probe_data:
-                print(f"{name}: {value}")
+        trend_id = create_new_trend(db_path, document_id, user_note="Automated trend collection")
+        if trend_id == -1:      # returns an error or failed (-1 logic). 
+            print("Failed to create new trend entry.")
+            return
 
-            # create document entry in DB.
-            document_id = create_new_document(db_path, description="Automated logging session")
-            document_ids = {"DocumentID": document_id}
-            # set error_log_path with doc IDs
-            error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
+        print("Starting trend sampling...")
+        start_trend_sampling(
+            db_path=db_path,
+            trend_id=trend_id,
+            probe_node=client.get_node(PROBE_1_NODE_ID),
+            treated_node=treated_node,
+            probe_description="Probe 1",
+            peak_nodes=peak_nodes,
+            interval_sec=2,
+            batch_size=1
+        )
 
-            # get treated node
-            treated_node = client.get_node(TREND_NODE_ID)
-            peak_nodes = []
+        print("Monitoring probe status...")
+        probe_status_node = client.get_node(PROBE_1_NODE_ID)
+        while True:
+            status = probe_status_node.get_value()
+            print(f"Probe running: {status}")
+            if not status:
+                print("Probe stopped. Waiting 10s to flush final data...")
+                time.sleep(10)
+                break
+            time.sleep(5)
 
-            for child in treated_node.get_children():
-                try:
-                    peak_value_node = child.get_child("2:PeakValue")
-                    label_node = child.get_child("2:Name")
-                    label = label_node.get_value()
-                    peak_nodes.append((peak_value_node, label))
-                    print(f"Found peak: {label}")
-                except Exception as e:
-                    log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
-
-            if not peak_nodes:
-                print("No peak nodes found. Exiting.")
-                return
-            
-            trend_id = create_new_trend(db_path, document_id, user_note="Automated trend collection")
-            if trend_id == -1:
-                print("Failed to create new trend entry.")
-                return
-
-            print("Starting trend sampling...")
-            start_trend_sampling(
-                db_path=db_path,
-                trend_id=trend_id,
-                probe_node=client.get_node(PROBE_1_NODE_ID),
-                treated_node=treated_node,
-                probe_description="Probe 1",
-                peak_nodes=peak_nodes,
-                interval_sec=2,
-                batch_size=10
+            print("Processing raw spectrum files...")
+            processed_count = process_and_store_data(
+                input_dir=logs_dir,
+                output_dir="processed",
+                smooth=True,
+                window_length=11,
+                polyorder=2
             )
+            print(f"Processed {processed_count} spectrum files.")
 
     except KeyboardInterrupt:
         print("Logging intrrupted by user (Ctrl+C).")
     except Exception as e: 
         log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
-
+    finally:
+        try:
+            client.disconnect()
+            print("Disconnected from OPC UA server.")
+        except Exception as e:
+            log_error_to_file(error_log_path, "Error during disconnection", e)
+            
 
 def load_and_preview_db(file_path=db_path, num_rows=5):
     conn = sqlite3.connect(file_path)
