@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import threading
 import sqlite3
@@ -44,8 +45,22 @@ def main():
         for name, value in probe_data:
             print(f"{name}: {value}")
 
+        experiment_name = None
+        for name, value in probe_data:
+            if name == "Experiment Name":
+                experiment_name = value
+                break
+
+        if experiment_name is None:
+            print("Experiment Name not found, using default.")
+            experiment_name = "Unknown_Experiment"
+
         # create document entry in DB.
-        document_id = create_new_document(db_path, description="Automated logging session")
+        document_id = create_new_document(
+            db_path,
+            name=experiment_name,
+            experiment_id=None)
+        
         document_ids = {"DocumentID": document_id}
 
         # set error_log_path with doc IDs
