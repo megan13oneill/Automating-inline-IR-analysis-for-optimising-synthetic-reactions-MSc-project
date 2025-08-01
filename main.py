@@ -1,8 +1,8 @@
-import argparse
-from datetime import datetime
 import os
+import time
 import sqlite3
 import pandas as pd
+from datetime import datetime
 
 from connect import try_connect
 from metadata_utils import get_probe1_data
@@ -12,125 +12,79 @@ from db_utils import create_new_document, start_trend_sampling, create_new_trend
 from error_logger import log_error_to_file
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
+TREND_NODE_ID = "ns=2;s=Local.iCIR.Probe1.Trends"
 db_path = "ReactIR.db"
+logs_dir = "logs"
 
 def main():
-    parser = argparse.ArgumentParser(description='Infrared Spectrum Logger CLI')
-    parser.add_argument('--log', action='store_true', help="Log raw spectra from OPC UA")
-    parser.add_argument('--process', action='store_true', help="Process and plot spectra")
-    parser.add_argument('--no-db', action='store_true', help="Skip database insert")
-    parser.add_argument('--output-dir', type=str, default='logs', help="Directory for spectra")
-    parser.add_argument('--treated-node', type=str, help="Node ID for treated temperature")
-    parser.add_argument('--peak-node', action='append', help="Peak node(s) in format 'NodeID:Label'")
-    parser.add_argument('--trend', action='store_true', help="Start trend sampling")
-
-    args = parser.parse_args()
-
-    os.makedirs("logs", exist_ok=True)
-
-    db_insert_enabled = not args.no_db
-    fallback_log_path = os.path.join("logs", "error_log_fallback.txt")
-
     timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    os.makedirs("logs", exist_ok=True)
+    fallback_log_path = os.path.join("logs", "error_log_fallback.txt")
 
     try:
         with try_connect(error_log_path=fallback_log_path) as client:
             if not client: 
                 print("Failed to connect to OPC UA server.")
                 return
+            
+            print(f"Waiting for experiment to fully initialise...")
+            time.sleep(10) # Delay to allow cloned experiment to populate nodes.
         
-        try:
             # Get probe metadata once connected
             probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
             print("\nProbe 1 Metadata:")
             for name, value in probe_data:
                 print(f"{name}: {value}")
 
-            document_id = create_new_document(db_path, description="CLI logging session")
+            # create document entry in DB.
+            document_id = create_new_document(db_path, description="Automated logging session")
             document_ids = {"DocumentID": document_id}
-
             # set error_log_path with doc IDs
             error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
-        
-        except Exception as e:
-            log_error_to_file(fallback_log_path, "Failed during probe metadata retrieval or document creation", e)
-            return
-        except KeyboardInterrupt:
-            print("Program interrupted by user.")
+
+            # get treated node
+            treated_node = client.get_node(TREND_NODE_ID)
+            peak_nodes = []
+
+            for child in treated_node.get_children():
+                try:
+                    peak_value_node = child.get_child("2:PeakValue")
+                    label_node = child.get_child("2:Name")
+                    label = label_node.get_value()
+                    peak_nodes.append((peak_value_node, label))
+                    print(f"Found peak: {label}")
+                except Exception as e:
+                    log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
+
+            if not peak_nodes:
+                print("No peak nodes found. Exiting.")
+                return
+            
+            trend_id = create_new_trend(db_path, document_id, user_note="Automated trend collection")
+            if trend_id == -1:
+                print("Failed to create new trend entry.")
+                return
+
+            print("Starting trend sampling...")
+            start_trend_sampling(
+                db_path=db_path,
+                trend_id=trend_id,
+                probe_node=client.get_node(PROBE_1_NODE_ID),
+                treated_node=treated_node,
+                probe_description="Probe 1",
+                peak_nodes=peak_nodes,
+                interval_sec=2,
+                batch_size=10
+            )
+
+    except KeyboardInterrupt:
+        print("Logging intrrupted by user (Ctrl+C).")
+    except Exception as e: 
+        log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
 
 
-        if args.log:
-            try:
-                # Start logging raw spectrum data
-                raw_spectrum_logger(
-                    client,
-                    probe_status_id="ns=2;s=Local.iCIR.Probe1.ProbeStatus",
-                    raw_spectrum_id="ns=2;s=Local.iCIR.Probe1.SpectraRaw",
-                    sampling_interval_id="ns=2;s=Local.iCIR.Probe1.CurrentSamplingInterval",
-                    output_dir=args.output_dir,
-                    db_path=db_path,
-                    document_ids=document_ids,
-                    probe1_node_id=PROBE_1_NODE_ID,
-                    error_log_path=error_log_path
-                )
-            except Exception as e:
-                log_error_to_file(error_log_path, "Error during raw spectrum logging", e)
-
-        if args.trend:
-            try:
-                if not args.treated_node or not args.peak_node:
-                    print(f"--treated_node and at least one --peak-node are required for --trend")
-                    return
-                
-                treated_node = client.get_node(args.treated_node)
-
-                peak_nodes = []
-                for item in args.peak_node:
-                    try:
-                        node_id, label = item.split(":", 1)
-                        peak_nodes.append((client.get_node(node_id.strip()), label.strip()))
-                    except ValueError:
-                        log_error_to_file(error_log_path, f"Invalid --peak-node format: {item}")
-                        return
-                    
-                trend_id = create_new_trend(db_path, document_id, user_note="Started from CLI")
-                if trend_id == -1:
-                    print("Failed to create new trend.")
-                    return
-                
-                start_trend_sampling(
-                    db_path=db_path,
-                    trend_id=trend_id,
-                    probe_node=client.get_node(PROBE_1_NODE_ID), 
-                    treated_node=treated_node,
-                    probe_description="Probe 1",
-                    peak_nodes=peak_nodes,
-                    interval_sec=2,
-                    batch_size=10
-                )
-
-            except Exception as e:
-                log_error_to_file(fallback_log_path, "Error during trend sampling", e)
-
-        if args.process:
-            try:
-                # Process and store the logged data
-                processed_count = process_and_store_data(
-                    input_dir=args.output_dir,
-                    output_dir="processed",
-                    smooth=True,
-                    window_length=11,
-                    polyorder=2
-                )
-                print(f"Successfully processed {processed_count} spectrum files.")
-            except Exception as e:
-                log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
-
-    except  Exception as e:
-        log_error_to_file(error_log_path, "Unhandled exception in main()", e)
-
-def load_and_preview_db(file_path, num_rows=5):
-    conn = sqlite3.connect(db_path)
+def load_and_preview_db(file_path=db_path, num_rows=5):
+    conn = sqlite3.connect(file_path)
     cursor = conn.cursor()
 
     # get all table names
