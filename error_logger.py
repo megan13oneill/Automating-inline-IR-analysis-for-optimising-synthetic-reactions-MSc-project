@@ -10,7 +10,7 @@ def log_error_to_file(error_log_path=log_file_path, context_message="No context 
         log_dir = os.path.dirname(error_log_path)
         if log_dir:
             os.makedirs(log_dir, exist_ok=True)
-            
+
         timestamp = datetime.now().strftime("%d-%m%Y_%H:%M:%S")
 
         log_entry = (
@@ -27,7 +27,7 @@ def log_error_to_file(error_log_path=log_file_path, context_message="No context 
         
         log_entry += "-" * 60 + "\n"
 
-        with open(error_log_path, 'a') as f:
+        with open(error_log_path, 'a', encoding='utf-8') as f:
             f.write(log_entry)
 
     except Exception:

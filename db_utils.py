@@ -283,7 +283,7 @@ def create_new_trend(db_path, document_id, user_note=("")):
     finally:
         conn.close()
 
-def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_description, peak_nodes, interval_sec=2, batch_size=10):
+def start_trend_sampling(db_path, trend_id, probe_node, treated_node, probe_description, peak_nodes, interval_sec=2, batch_size=1):
     """ Samples both probe and peak values at a fixed interval and stores in db."""
 
     conn = sqlite3.connect(db_path)
