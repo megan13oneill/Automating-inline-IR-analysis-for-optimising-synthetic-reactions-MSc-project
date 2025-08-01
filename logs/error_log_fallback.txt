@@ -12,3 +12,17 @@ Traceback (most recent call last):
        ^^^^^^^^^^^^^
 UnboundLocalError: cannot access local variable 'allowed_nodes' where it is not associated with a value
 ------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 01-082025_12:03:55
+Context: Unhandled exception in main()
+Exception: cannot access local variable 'allowed_nodes' where it is not associated with a value
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 42, in main
+    probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 9, in get_probe1_data
+    if allowed_nodes is None:
+       ^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'allowed_nodes' where it is not associated with a value
+------------------------------------------------------------
