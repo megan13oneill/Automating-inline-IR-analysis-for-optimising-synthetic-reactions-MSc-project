@@ -1,0 +1,14 @@
+
+--- ERROR LOG ---
+Timestamp: 31-072025_16:54:51
+Context: Failed during probe metadata retrieval or document creation
+Exception: cannot access local variable 'allowed_nodes' where it is not associated with a value
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 44, in main
+    probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 9, in get_probe1_data
+    if allowed_nodes is None:
+       ^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'allowed_nodes' where it is not associated with a value
+------------------------------------------------------------
