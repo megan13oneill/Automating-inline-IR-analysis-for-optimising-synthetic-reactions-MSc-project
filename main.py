@@ -204,5 +204,3 @@ if __name__ == "__main__":
     main()
     #db_path = 'ReactIR.db'
     #load_and_preview_db(db_path)
-
-
