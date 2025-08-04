@@ -41,7 +41,7 @@ def main():
         # wait for probe1 and child nodes to be fully initialised.
         max_attempts = 3
         delay_sec = 30
-        connected = False
+        trends_ready= False
         treated_node = client.get_node(TREND_NODE_ID)
 
         for attempt in range (1, max_attempts + 1):
@@ -71,12 +71,6 @@ def main():
         print("\nAll metadata keys:")
         print([name for name, _ in probe_data])
 
-        experiment_name = None
-        for name, value in probe_data:
-            if name == "Experiment Name":
-                experiment_name = value
-                break
-
         experiment_name = next((value for name, value in probe_data if name == "Experiment Name"), "Unknown_Experiment")
 
         # create document entry in DB.
@@ -89,34 +83,38 @@ def main():
 
         peak_nodes = []
         children = treated_node.get_children()
-        print(f"Found {len(children)} children in treated_node")
+        print(f"Found {len(children)} children in Probe1.Trends")
 
         for child in children:
             try: 
                 # debug print children of child node
-                grandchildren = child.get_children()
-                print(f"Child node {child} has children: {grandchildren}")
-
-                # get the peak value node 
-                peak_value_node = child.get_child("2:TreatedValue")
-
-                # use base node name (e.g. peak at 1155cm-1) as the label.
                 label = child.get_display_name().Text
-                peak_nodes.append((peak_value_node, label))
-                print(f"Found peak: {label}")
+                grandchildren = child.get_children()
+                found_treated_value = False
+
+                for grandchild in grandchildren:
+                    if grandchild.nodeid.Identifier.endswith(".TreatedValue"):
+                        peak_nodes.append((grandchild, label))
+                        print(f"✓ Found peak: {label}")
+                        found_treated_value = True
+                        break
+
+                if not found_treated_value:
+                    print(f"✗ Skipped {label} — no .TreatedValue node found.")
+
             except Exception as e:
-                try: 
+                print(f"⚠️ Error reading node {child}: {e}")
+                try:
                     log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
-                except Exception as log_e: 
+                except Exception as log_e:
                     print(f"Failed to log error: {log_e}")
-                print(f"Error reading child node {child}: {e}")
 
         if not peak_nodes:
-            print("No peak nodes found. Exiting.")
+            print("No valid peak nodes found. Exiting.")
             return
-        
+
         trend_id = create_new_trend(db_path, document_id, user_note="Automated trend collection")
-        if trend_id == -1:      # returns an error or failed (-1 logic). 
+        if trend_id == -1:
             print("Failed to create new trend entry.")
             return
 
@@ -188,7 +186,7 @@ def main():
                     log_error_to_file(error_log_path, "Error reading probe status", e)
                 except Exception as log_e:
                     print(f"Failed to log error reading probe status: {log_e}")
-                    break
+                break
 
         print("Processing raw spectrum files...")
         processed_count = process_and_store_data(
