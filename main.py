@@ -97,9 +97,11 @@ def main():
                 grandchildren = child.get_children()
                 print(f"Child node {child} has children: {grandchildren}")
 
-                peak_value_node = child.get_child("2:PeakValue")    # need to change this name
-                label_node = child.get_child("2:Name")          # need to change this too.
-                label = label_node.get_value()
+                # get the peak value node 
+                peak_value_node = child.get_child("2:TreatedValue")
+
+                # use base node name (e.g. peak at 1155cm-1) as the label.
+                label = child.get_display_name().Text
                 peak_nodes.append((peak_value_node, label))
                 print(f"Found peak: {label}")
             except Exception as e:
