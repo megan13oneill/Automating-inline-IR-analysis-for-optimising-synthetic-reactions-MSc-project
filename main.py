@@ -57,10 +57,10 @@ def main():
                 
         print(f"Waiting for experiment to fully initialise...")
         # Delay to allow cloned experiment to populate nodes.
-        probe1_node = client.get_node(PROBE_1_NODE_ID)
-        if not wait_for_node_operational(probe1_node, timeout_sec=90):
-            print(f"Probe 1 node not operational, exiting.")
-            return
+        # probe1_node = client.get_node(PROBE_1_NODE_ID)
+        # if not wait_for_node_operational(probe1_node, timeout_sec=90):
+        #     print(f"Probe 1 node not operational, exiting.")
+        #     return
     
         # Get probe metadata once connected
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
@@ -103,7 +103,7 @@ def main():
         for child in children:
             try: 
                 # debug print children of child node
-                grandchildren = child.getchildren()
+                grandchildren = child.get_children()
                 print(f"Child node {child} has children: {grandchildren}")
 
                 peak_value_node = child.get_child("2:PeakValue")    # need to change this name
