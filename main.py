@@ -24,25 +24,6 @@ db_path = "ReactIR.db"
 logs_dir = "logs"
 output_dir = "logs"
 
-def wait_for_node_operational(node, timeout_sec=60, poll_interval=3):
-    """ Wait untill a node's value can be read without BadOutOfService error or timeout."""
-    start_time = time.time()
-    while True:
-        try:
-            op_node = node.get_value()
-            return True
-        except Exception as e: 
-            if "BadOutOfService" in str(e):
-                elasped = time.time() - start_time
-                if elasped > timeout_sec:
-                    print(f"Timeout waiting for node {node} to become operational.")
-                    return False
-                print(f"Node {node} not operational yet, retrying in {poll_interval}s...")
-                time.sleep(poll_interval)
-            else:
-                print(f"Unexpected error reading node {node}: {e}")
-                return False
-
 def main():
     timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     os.makedirs("logs", exist_ok=True)
@@ -56,12 +37,31 @@ def main():
             return
                 
         print(f"Waiting for experiment to fully initialise...")
-        # Delay to allow cloned experiment to populate nodes.
-        # probe1_node = client.get_node(PROBE_1_NODE_ID)
-        # if not wait_for_node_operational(probe1_node, timeout_sec=90):
-        #     print(f"Probe 1 node not operational, exiting.")
-        #     return
-    
+        
+        # wait for probe1 and child nodes to be fully initialised.
+        max_attempts = 3
+        delay_sec = 30
+        connected = False
+        treated_node = client.get_node(TREND_NODE_ID)
+
+        for attempt in range (1, max_attempts + 1):
+            print(f"Waiting for Trend nodes to initialise... (Attempt {attempt}/{max_attempts})")
+            time.sleep(delay_sec)
+            try:
+                children = treated_node.get_children()
+                if children:
+                    print(f"Trends node has {len(children)} children. Assuming node is ready.")
+                    trends_ready = True
+                    break 
+                else:
+                    print(f"Trend node found but has no children yet.")
+            except Exception as e:
+                print(f"Error checking Trend node: {e}")
+
+        if not trends_ready:
+            print(f"Trend node did not initialise after retries. Exiting.")
+            return
+
         # Get probe metadata once connected
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
         print("\nProbe 1 Metadata:")
@@ -77,9 +77,7 @@ def main():
                 experiment_name = value
                 break
 
-        if experiment_name is None:
-            print("Experiment Name not found, using default.")
-            experiment_name = "Unknown_Experiment"
+        experiment_name = next((value for name, value in probe_data if name == "Experiment Name"), "Unknown_Experiment")
 
         # create document entry in DB.
         document_id = create_new_document(
@@ -89,14 +87,7 @@ def main():
         
         document_ids = {"DocumentID": document_id}
 
-        # get treated node
-        treated_node = client.get_node(TREND_NODE_ID)
-        if not wait_for_node_operational(treated_node, timeout_sec=60):
-            print("Trend not operational, exiting.")
-            return
-
         peak_nodes = []
-
         children = treated_node.get_children()
         print(f"Found {len(children)} children in treated_node")
 
