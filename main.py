@@ -103,10 +103,10 @@ def main():
                 try:
                 # debug print children of child node
                     label = child.get_browse_name().Name
-            except Exception as name_e:
-                label = str(child.nodeid.Identifier)
-                print(f"Could not get display name for child node {child}: {name_e}")
-                log_error_to_file(error_log_path, f"Could not get name for child node", name_e)
+                except Exception as name_e:
+                    label = str(child.nodeid.Identifier)
+                    print(f"Could not get display name for child node {child}: {name_e}")
+                    log_error_to_file(error_log_path, f"Could not get name for child node", name_e)
 
                 found_treated_value = False
                 try: 
