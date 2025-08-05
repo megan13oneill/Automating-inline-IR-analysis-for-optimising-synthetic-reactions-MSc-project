@@ -146,17 +146,19 @@ def setup_database(db_path="ReactIR.db"):
     except Exception as e: 
         log_error_to_file(e, "Error in setup_database()")
 
-def create_new_document(db_path: str, name: str, experiment_id: int) -> int:
+def create_new_document(db_path: str, name: str, experiment_id: int, error_log_path=None) -> int:
     """ Insert a new document entry and return the new DocumentID."""
     try:
         with sqlite3.connect(db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """ INSERT INTO Documents (Name, ExperimentID) VALUES (?, ?)""",
-                (name, experiment_id)
+                """ INSERT INTO Documents (Name, ExperimentID, ErrorLogPath) VALUES (?, ?, ?)""",
+                (name, experiment_id, error_log_path)
             )
             conn.commit()
-            return cursor.lastrowid
+            document_id = cursor.lastrowid
+            conn.close()
+            return document_id
     except Exception as e:
         log_error_to_file(e, "Error in create_new_document()")
         return -1

@@ -90,7 +90,8 @@ def main():
         document_id = create_new_document(
             db_path,
             name=experiment_name,
-            experiment_id=None)
+            experiment_id=None,
+            error_log_path=get_error_log_path())
         
         document_ids = {"DocumentID": document_id}
 
