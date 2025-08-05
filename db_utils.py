@@ -52,6 +52,7 @@ def setup_database(db_path="ReactIR.db"):
             DocumentID INTEGER PRIMARY KEY AUTOINCREMENT,
             Name TEXT NOT NULL,
             ExperimentID INTEGER,
+            ErrorLogPath TEXT,
             FOREIGN KEY (ExperimentID) REFERENCES Experiments(ExperimentID)
         );
 
