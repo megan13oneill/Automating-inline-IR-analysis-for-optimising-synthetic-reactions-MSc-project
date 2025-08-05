@@ -1,0 +1,18 @@
+
+--- ERROR LOG ---
+Timestamp: 05-082025_15-17-23
+Context: table Documents has no column named ErrorLogPath
+Exception: Error in create_new_document()
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\db_utils.py", line 154, in create_new_document
+    cursor.execute(
+    ~~~~~~~~~~~~~~^
+        """ INSERT INTO Documents (Name, ExperimentID, ErrorLogPath) VALUES (?, ?, ?)""",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        (name, experiment_id, error_log_path)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+sqlite3.OperationalError: table Documents has no column named ErrorLogPath
+------------------------------------------------------------
