@@ -10,7 +10,6 @@ def try_connect(server_url=SERVER_URL, max_retries=3, delay=2, error_log_path=No
     """ Will attempt to connect to the OPC UA server. Will either return connected if successful 
         or will say connection has failed. 
     """
-
     client = Client(server_url)
 
     for attempt in range(1, max_retries + 1):

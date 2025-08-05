@@ -11,7 +11,7 @@ from metadata_utils import get_probe1_data
 from spectrum_logger import raw_spectrum_logger
 from processing_utils import process_and_store_data
 from db_utils import create_new_document, start_trend_sampling, create_new_trend, end_trend
-from error_logger import log_error_to_file
+from error_logger import set_error_log_path, log_error_to_file
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 TREND_NODE_ID = "ns=2;s=Local.iCIR.Probe1.Trends"
@@ -24,14 +24,19 @@ db_path = "ReactIR.db"
 logs_dir = "logs"
 output_dir = "logs"
 
-def main():
-    timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-    os.makedirs("logs", exist_ok=True)
-    fallback_log_path = os.path.join("logs", "error_log_fallback.txt")
-    error_log_path = os.path.join("logs", f"error_log_{timestamp}.txt")
 
+timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+default_log_folder = os.path.join("logs", "startup")
+os.makedirs(default_log_folder, exist_ok=True)
+error_log_path = os.path.join(default_log_folder, f"error_log_{timestamp}.txt")
+print(f"The iniial Error log file for this experiment is: {error_log_path}")
+
+def main():
+    # os.makedirs("logs", exist_ok=True)
+    print(f"The Error log file for this experiment is: {error_log_path}")
+    
     try: 
-        client = try_connect(error_log_path=fallback_log_path)
+        client = try_connect(error_log_path=error_log_path)
         if not client: 
             print("Failed to connect to OPC UA server.")
             return
@@ -72,6 +77,13 @@ def main():
         print([name for name, _ in probe_data])
 
         experiment_name = next((value for name, value in probe_data if name == "Experiment Name"), "Unknown_Experiment")
+
+        # create log folder for the error logger.
+        set_error_log_path(error_log_path)
+        log_folder = os.path.join("logs", experiment_name)
+        os.makedirs(log_folder, exist_ok=True)
+        error_log_path = os.path.join(log_folder, f"error_log_{timestamp}.txt")
+        print(f"Updated Error log file for this experiment: {error_log_path}")
 
         # create document entry in DB.
         document_id = create_new_document(
@@ -200,9 +212,13 @@ def main():
 
     except KeyboardInterrupt:
         print("Logging intrrupted by user (Ctrl+C).")
+        try:
+            log_error_to_file(error_log_path, "User interrupted logging (Ctrl+C)")
+        except Exception as log_e:
+            print(f"Failed to log KeyboardInterrupt: {log_e}")
     except Exception as e: 
         try:
-            log_error_to_file(fallback_log_path, "Unhandled exception in main()", e)
+            log_error_to_file(error_log_path, "Unhandled exception in main()", e)
         except Exception as log_e:
             print(f"Failed to log unhandled exception: {log_e}")
     finally:

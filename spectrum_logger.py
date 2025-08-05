@@ -83,7 +83,7 @@ def raw_spectrum_logger (client,
                 csv_filename = os.path.join(output_dir, f"raw_spectrum_{timestamp_str}.csv")
 
                 write_spectrum_csv(wavenumbers, spectrum, csv_filename)
-                print(f"Spectrum logged at {datetime.now().strftime('%H:%M:%S')}")
+                print(f"Spectrum logged at {datetime.now().strftime('%H-%M-%S')}")
 
                 if db_path and document_ids and probe1_node_id:
                     metadata = dict(get_probe1_data(client, probe1_node_id))
