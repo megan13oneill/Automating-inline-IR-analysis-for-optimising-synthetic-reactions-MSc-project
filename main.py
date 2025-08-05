@@ -11,7 +11,7 @@ from metadata_utils import get_probe1_data
 from spectrum_logger import raw_spectrum_logger
 from processing_utils import process_and_store_data
 from db_utils import create_new_document, start_trend_sampling, create_new_trend, end_trend
-from error_logger import set_error_log_path, log_error_to_file
+from error_logger import set_error_log_path, get_error_log_path, log_error_to_file
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
 TREND_NODE_ID = "ns=2;s=Local.iCIR.Probe1.Trends"
@@ -79,10 +79,11 @@ def main():
         experiment_name = next((value for name, value in probe_data if name == "Experiment Name"), "Unknown_Experiment")
 
         # create log folder for the error logger.
-        set_error_log_path(error_log_path)
         log_folder = os.path.join("logs", experiment_name)
         os.makedirs(log_folder, exist_ok=True)
+
         error_log_path = os.path.join(log_folder, f"error_log_{timestamp}.txt")
+        set_error_log_path(error_log_path)
         print(f"Updated Error log file for this experiment: {error_log_path}")
 
         # create document entry in DB.
