@@ -25,15 +25,14 @@ logs_dir = "logs"
 output_dir = "logs"
 
 
-timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-default_log_folder = os.path.join("logs", "startup")
-os.makedirs(default_log_folder, exist_ok=True)
-error_log_path = os.path.join(default_log_folder, f"error_log_{timestamp}.txt")
-print(f"The iniial Error log file for this experiment is: {error_log_path}")
-
 def main():
-    # os.makedirs("logs", exist_ok=True)
-    print(f"The Error log file for this experiment is: {error_log_path}")
+    timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+    default_log_folder = os.path.join("logs", "startup")
+    os.makedirs(default_log_folder, exist_ok=True)
+    error_log_path = os.path.join(default_log_folder, f"error_log_{timestamp}.txt")
+
+    set_error_log_path(error_log_path)
+    print(f"The iniial Error log file for this experiment is: {error_log_path}")
     
     try: 
         client = try_connect(error_log_path=error_log_path)
