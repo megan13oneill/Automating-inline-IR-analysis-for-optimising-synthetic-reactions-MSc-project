@@ -102,6 +102,10 @@ def main():
             try: 
                 # debug print children of child node
                 label = child.get_display_name().Text
+            except Exception as name_e:
+                label = str(child.nodeid.Identifier)
+                print(f"Could not get display name for child node {child}: {name_e}")
+
                 grandchildren = child.get_children()
                 found_treated_value = False
 
