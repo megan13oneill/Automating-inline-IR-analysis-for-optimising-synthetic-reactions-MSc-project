@@ -99,28 +99,40 @@ def main():
         print(f"Found {len(children)} children in Probe1.Trends")
 
         for child in children:
-            try: 
+            try:
+                try:
                 # debug print children of child node
-                label = child.get_display_name().Text
+                    label = child.get_browse_name().Name
             except Exception as name_e:
                 label = str(child.nodeid.Identifier)
                 print(f"Could not get display name for child node {child}: {name_e}")
+                log_error_to_file(error_log_path, f"Could not get name for child node", name_e)
 
-                grandchildren = child.get_children()
                 found_treated_value = False
+                try: 
+                    grandchildren = child.get_children()
+                except Exception as child_e:
+                    print(f"Could not get children of node {label}: {child_e}")
+                    log_error_to_file(error_log_path, f"Could not get children of node {label}", child_e)
+                    continue 
 
                 for grandchild in grandchildren:
-                    if grandchild.nodeid.Identifier.endswith(".TreatedValue"):
-                        peak_nodes.append((grandchild, label))
-                        print(f"✓ Found peak: {label}")
-                        found_treated_value = True
-                        break
+                    try:
+                        node_id_str = str(grandchild.nodeid.Identifier)
+                        if node_id_str.endswith(".TreatedValue"):
+                            peak_nodes.append((grandchild, label))
+                            print(f"✓ Found peak: {label}")
+                            found_treated_value = True
+                            break
+                    except Exception as grandchild_e:
+                        print(f"Error checking grandchild of {label}: {grandchild_e}")
+                        log_error_to_file(error_log_path, f"Error checking grandchild of {label}")
 
                 if not found_treated_value:
                     print(f"✗ Skipped {label} — no .TreatedValue node found.")
 
             except Exception as e:
-                print(f"⚠️ Error reading node {child}: {e}")
+                print(f"⚠️ Unhandled error with trend child node: {e}")
                 try:
                     log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
                 except Exception as log_e:
