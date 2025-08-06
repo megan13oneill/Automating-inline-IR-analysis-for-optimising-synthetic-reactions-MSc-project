@@ -81,21 +81,21 @@ def raw_spectrum_logger (client,
                 spectrum = client.get_node(raw_spectrum_id).get_value()
                 timestamp_str = get_current_timestamp_str()
                 
-                run_dir = os.path.join(output_dir, f"run_{timestamp_str}")
-                os.makedirs(run_dir, exist_ok=True)
-
-                raw_csv = os.path.join(run_dir, f"raw_spectrum.csv")
+                run_dir = output_dir
+                # os.makedirs(run_dir, exist_ok=True)
+                spectrum_filename = f"raw_spectrum_{timestamp_str}.csv"
+                raw_csv = os.path.join(run_dir, spectrum_filename)
 
                 write_spectrum_csv(wavenumbers, spectrum, raw_csv)
-                # print(f"Spectrum logged at {datetime.now().strftime('%H-%M-%S')}")
 
                 if probe1_node_id:
                     metadata = dict(get_probe1_data(client, probe1_node_id))
 
                     for label, data in metadata.items():
-                        if label == "Last Sample Treated Spectra":
-                            treated_csv = os.path.join(run_dir, "treated_spectrum.csv")
-                            write_spectrum_csv(wavenumbers, data, treated_csv)
+                        if label == "Last Sample Treated Spectra" in metadata:
+                            treated_filename = f"treated_spectrum_{timestamp_str}.csv"
+                            treated_csv = os.path.join(run_dir, treated_filename)
+                            write_spectrum_csv(wavenumbers, metadata["Last Sample Treated Spectra"], treated_csv)
                 
                 if db_path and document_ids and probe1_node_id:
                         insert_probe_sample_and_spectrum(
@@ -108,7 +108,7 @@ def raw_spectrum_logger (client,
                     print("Skipping DB insert - incomplete DB parameters.")
 
                 spectrum_counter += 1
-                print(f"Spectrum logged at {datetime.now().strftime('%H-%M-%S')}")
+                print(f"Spectrum logged to {raw_csv} at {datetime.now().strftime('%H-%M-%S')}")
 
             except UaStatusCodeError as e:
                 error_message = "OPC UA error while reading spectrum"
