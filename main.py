@@ -233,8 +233,8 @@ def main():
 
         print("Processing raw spectrum files...")
         processed_count = process_and_store_data(
-            input_dir=logs_dir,
-            output_dir="processed",
+            input_dir=run_folder,
+            output_dir=processed_folder,
             smooth=True,
             window_length=11,
             polyorder=2
