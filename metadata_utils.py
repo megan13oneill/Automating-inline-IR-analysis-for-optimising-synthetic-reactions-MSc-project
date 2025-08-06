@@ -6,12 +6,12 @@ def get_probe1_data (client, probe1_node_id):
     """ queries selected child nodes of Probe1 node and returns 
         their nodes and values.
     """
-    allowed_nodes = {
-        "Probe Name", "Probe Description", "Probe Status", "Document Name",
-        "Experiment Name", "Suffix", "User Name", "Project Name", "Sample Count",
-        "Current Sampling Interval", "Last Sample Time", "Last Sample Raw Spectra",
-        "Last Sample Background Spectra", "Last Sample Treated Spectra"
-    }
+    # allowed_nodes = {
+    #     "Probe Name", "Probe Description", "Probe Status", "Document Name",
+    #     "Experiment Name", "Suffix", "User Name", "Project Name", "Sample Count",
+    #     "Current Sampling Interval", "Last Sample Time", "Last Sample Raw Spectra",
+    #     "Last Sample Background Spectra", "Last Sample Treated Spectra"
+    # }
 
     probe1_results = []
 
@@ -23,7 +23,13 @@ def get_probe1_data (client, probe1_node_id):
             try: 
                 browse_name = child.get_browse_name().Name
                 value_of_node = child.get_value()
+                if isinstance(value_of_node, (list,tuple)) and len(value_of_node) > 10:
+                    display_value = f"[{len(value_of_node)} values]"
+                else:
+                    display_value = value_of_node
+                
                 probe1_results.append((browse_name, value_of_node))
+
             except UaStatusCodeError as e:
                 print(f"Error reading child node: {e}")
             except Exception as e:
