@@ -88,6 +88,17 @@ def main():
         set_error_log_path(error_log_path)
         print(f"Updated Error log file for this experiment: {error_log_path}")
 
+        # Create folders for raw spectra and processed data
+        spectrum_folder = os.path.join(log_folder, "spectra")
+        os.makedirs(spectrum_folder, exist_ok=True)
+
+        run_folder = os.path.join(spectrum_folder, f"spectrum_run_{timestamp}")
+        os.makedirs(run_folder, exist_ok=True)
+
+        processed_folder = os.path.join(log_folder, "processed", f"spectrum_run_{timestamp}")
+        os.makedirs(processed_folder, exist_ok=True)
+
+
         # create document entry in DB.
         document_id = create_new_document(
             db_path,
@@ -159,7 +170,7 @@ def main():
                     probe_status_id=PROBE_STATUS_ID,
                     raw_spectrum_id=RAW_SPECTRUM_ID,
                     sampling_interval_id=SAMPLING_INTERVAL_ID,
-                    output_dir=output_dir,
+                    output_dir=run_folder,
                     db_path=db_path,
                     document_ids=document_ids,
                     probe1_node_id=PROBE_1_NODE_ID,
