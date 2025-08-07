@@ -1,5 +1,7 @@
 import os
 import time
+import traceback
+import pandas as pd
 from datetime import datetime
 from opcua.ua.uaerrors import UaStatusCodeError
 import numpy as np
@@ -16,14 +18,14 @@ def raw_spectrum_logger(
     raw_spectrum_id,
     sampling_interval_id=None,
     output_dir="logs",
-    default_delay=1.0,
     wavenumber_start=4000,
     wavenumber_end=650,
     db_path=None,
     document_ids=None,
     probe1_node_id=None,
     error_log_path=None,
-    stop_event=None  # ✅ Added to support graceful shutdown
+    stop_event=None,
+    default_delay = 5.0
 ):
     """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
 
@@ -38,7 +40,6 @@ def raw_spectrum_logger(
             if stop_event and stop_event.is_set():
                 print("Stop event triggered before probe started. Exiting.")
                 return
-
             try:
                 probe_status = client.get_node(probe_status_id).get_value()
                 if isinstance(probe_status, str) and probe_status.lower() == "running":
@@ -141,6 +142,7 @@ def raw_spectrum_logger(
                 if error_log_path:
                     log_error_to_file(error_log_path, error_message, e)
 
+            print(f"Sleeping for {delay_seconds} seconds...")
             time.sleep(delay_seconds)
 
     except Exception as e:
