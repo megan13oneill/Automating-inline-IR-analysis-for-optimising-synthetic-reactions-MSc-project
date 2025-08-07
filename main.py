@@ -175,7 +175,8 @@ def main():
                     document_ids=document_ids,
                     probe1_node_id=PROBE_1_NODE_ID,
                     error_log_path=error_log_path,
-                    stop_event=stop_event
+                    stop_event=stop_event,
+                    default_delay=5.0
                 )
             except Exception as e:
                 try:
