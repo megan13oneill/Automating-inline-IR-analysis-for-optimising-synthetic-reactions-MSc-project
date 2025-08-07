@@ -4,15 +4,8 @@ from datetime import datetime
 import time
 from opcua import Client
 import traceback
-import logging
 
 from error_logger import log_error_to_file
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
-)
 
 db_path = "ReactIR.db"
 PROBE_COLUMNS = ["Description", "DocumentID", "LatestTemperatureCelsius", "LatestTemperatureTime"]
@@ -30,7 +23,7 @@ def setup_database(db_path="ReactIR.db"):
         cursor.execute("PRAGMA synchronous=NORMAL;") # faster writes, still resonably safe
         cursor.execute("PRAGMA temp_store=MEMORY;") # Temp tables stay in RAM
 
-    # Create tables if they don't exist
+        # Create tables if they don't exist
         cursor.executescript("""
         -- Create Users table
         CREATE TABLE IF NOT EXISTS Users (
@@ -139,8 +132,8 @@ def setup_database(db_path="ReactIR.db"):
 
         conn.commit()
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID;)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID;)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_trend ON ProbeTempSamples (TrendID);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_trend ON PeakSamples (TrendID);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_probe_temp_timestamp ON ProbeTempSamples (Timestamp);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_peak_samples_timestamp ON PeakSamples (Timestamp);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_experiment ON Documents (ExperimentID);")
@@ -216,7 +209,6 @@ def setup_experiment_metadata(db_path, username, project_name, experiment_name, 
         log_error_to_file(e, "Error in setup_experiment_metadata()")
         return {}
 
-# during exp - inserting each spectrum + metadata
 def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectrum_csv_path):
     """Called during the experiment for each spectrum to insert. Probe, Sample, Spectrum file path and timestamp."""
 
@@ -390,4 +382,3 @@ def end_trend(db_path, trend_id):
             print(f"Trend {trend_id} marked as ended at {end_time}.")
     except Exception as e: 
         log_error_to_file(e, f"Error in end_trend() for TrendID {trend_id}")
-        logging.error(f"Failed to end trend {trend_id}")
