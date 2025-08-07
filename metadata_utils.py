@@ -1,5 +1,6 @@
 # querying the nodes on the IR to get the metadata of the reaction. 
 from opcua import ua
+import traceback
 from opcua.ua.uaerrors import UaStatusCodeError
 from opcua.ua import uaerrors
 
@@ -45,12 +46,8 @@ def get_probe1_data (client, probe1_node_id):
     except Exception as e:
         log_error_to_file(
             context_message=f"Failed to read Probe 1 node '{probe1_node_id}'",
-            exception=e
+            exception=e,
+            trace=traceback.format_exc()
         )
 
     return probe1_results
-
-
-    
-
-        

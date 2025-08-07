@@ -105,7 +105,6 @@ def main():
             error_log_path=get_error_log_path())
         
         document_ids = {"DocumentID": document_id}
-
         peak_nodes = []
         children = treated_node.get_children()
         print(f"Found {len(children)} children in Probe1.Trends")
