@@ -242,7 +242,7 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
 
         # Extract timestamp from filename, fallback to now
         try:
-            base = os.path.basename(rec['spectrum_csv_path'])
+            base = os.path.basename(spectrum_csv_path)
             ts_str = base.split("_", 2)[2].rsplit('.', 1)[0]
             recorded_at = datetime.strptime(ts_str, "%d-%m-%Y_%H-%M-%S_%f").isoformat()
         except Exception:
