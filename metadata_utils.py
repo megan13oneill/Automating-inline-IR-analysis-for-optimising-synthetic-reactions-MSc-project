@@ -28,7 +28,7 @@ def get_probe1_data (client, probe1_node_id):
                 
                 probe1_results.append((display_name, display_value))
 
-            except uaerrors.BadAttributeIdInvalid:
+            except uaerrors.BadAttributeIdInvalid as e:
                 log_error_to_file(
                     context_message=f"Child node '{child}' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)",
                     exception=e
