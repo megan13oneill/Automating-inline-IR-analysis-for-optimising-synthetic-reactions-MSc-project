@@ -4,8 +4,15 @@ from datetime import datetime
 import time
 from opcua import Client
 import traceback
+import logging
 
 from error_logger import log_error_to_file
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]
+)
 
 db_path = "ReactIR.db"
 PROBE_COLUMNS = ["Description", "DocumentID", "LatestTemperatureCelsius", "LatestTemperatureTime"]
@@ -383,5 +390,4 @@ def end_trend(db_path, trend_id):
             print(f"Trend {trend_id} marked as ended at {end_time}.")
     except Exception as e: 
         log_error_to_file(e, f"Error in end_trend() for TrendID {trend_id}")
-        print(f"Failed to end trend {trend_id}.")
-
+        logging.error(f"Failed to end trend {trend_id}")
