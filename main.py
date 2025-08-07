@@ -70,10 +70,7 @@ def main():
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
         print("\nProbe 1 Metadata:")
         for name, value in probe_data:
-            if isinstance(value, (list,tuple)) and len(value) > 10:
-                print(f"{name}: [Array of length {len(value)}]")
-            else:
-                print(f"{name}: {value}")
+            print(f"{name}: {value}")
 
         print("\nAll metadata keys:")
         print([name for name, _ in probe_data])

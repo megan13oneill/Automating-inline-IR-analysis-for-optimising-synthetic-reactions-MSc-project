@@ -8,12 +8,6 @@ def get_probe1_data (client, probe1_node_id):
     """ queries selected child nodes of Probe1 node and returns 
         their nodes and values.
     """
-    # allowed_nodes = {
-    #     "Probe Name", "Probe Description", "Probe Status", "Document Name",
-    #     "Experiment Name", "Suffix", "User Name", "Project Name", "Sample Count",
-    #     "Current Sampling Interval", "Last Sample Time", "Last Sample Raw Spectra",
-    #     "Last Sample Background Spectra", "Last Sample Treated Spectra"
-    # }
 
     probe1_results = []
 
@@ -30,7 +24,7 @@ def get_probe1_data (client, probe1_node_id):
                 else:
                     display_value = value_of_node
                 
-                probe1_results.append((browse_name, value_of_node))
+                probe1_results.append((browse_name, display_value))
 
             except UaStatusCodeError as e:
                 if e.status == ua.StatusCodes.BadAttributeIdInvalid:
