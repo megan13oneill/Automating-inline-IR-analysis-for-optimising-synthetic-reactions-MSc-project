@@ -1,6 +1,8 @@
 # querying the nodes on the IR to get the metadata of the reaction. 
-from opcua import Client
+from opcua import ua
 from opcua.ua.uaerrors import UaStatusCodeError
+
+from error_logger import log_error_to_file
 
 def get_probe1_data (client, probe1_node_id):
     """ queries selected child nodes of Probe1 node and returns 
@@ -31,12 +33,25 @@ def get_probe1_data (client, probe1_node_id):
                 probe1_results.append((browse_name, value_of_node))
 
             except UaStatusCodeError as e:
-                print(f"Error reading child node: {e}")
+                if e.status == ua.StatusCodes.BadAttributeIdInvalid:
+                    log_error_to_file(
+                        context_message=f"Child node '{child}' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)",
+                        exception=e
+                    )
+                else:
+                    log_error_to_file(context_message=f"UaStatusCodeError when reading child node'{child}'",
+                    exception=e
+                    )
             except Exception as e:
-                print(f"Unexpected error: {e}")
-
+                log_error_to_file(
+                    context_message=f"Unexpected error while reading child node '{child}'",
+                    exception=e
+                )
     except Exception as e:
-        print(f"Failed to read Probe 1 node: {e}")
+        log_error_to_file(
+            context_message=f"Failed to read Probe 1 node '{probe1_node_id}'",
+            exception=e
+        )
 
     return probe1_results
 
