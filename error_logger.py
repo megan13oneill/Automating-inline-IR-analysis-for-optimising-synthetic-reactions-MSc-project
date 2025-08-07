@@ -17,7 +17,7 @@ def get_error_log_path() -> str:
     """ get current error log file path."""
     return current_error_log_path
 
-def log_error_to_file(error_log_path, context_message: str = "No context provided", exception: Exception = None):
+def log_error_to_file(context_message: str = "No context provided", exception: Exception = None):
     """Logs error with timestamp, optional context, and stack trace."""
     try:
         if not current_error_log_path:
