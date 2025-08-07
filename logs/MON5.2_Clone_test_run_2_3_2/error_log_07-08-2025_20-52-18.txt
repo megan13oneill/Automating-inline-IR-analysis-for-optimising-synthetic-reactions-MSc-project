@@ -130,3 +130,15 @@ Traceback (most recent call last):
        ^^^^^^^^
 AttributeError: 'BadAttributeIdInvalid' object has no attribute 'status'
 ------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 07-082025_20-54-43
+Context: logs\MON5.2_Clone_test_run_2_3_2\error_log_07-08-2025_20-52-18.txt
+Exception: User interrupted logging (Ctrl+C)
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 225, in main
+    time.sleep(5)
+    ~~~~~~~~~~^^^
+KeyboardInterrupt
+------------------------------------------------------------

@@ -157,7 +157,6 @@ def create_new_document(db_path: str, name: str, experiment_id: int, error_log_p
             )
             conn.commit()
             document_id = cursor.lastrowid
-            conn.close()
             return document_id
     except Exception as e:
         log_error_to_file(e, "Error in create_new_document()")
