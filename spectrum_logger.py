@@ -67,6 +67,9 @@ def raw_spectrum_logger (client,
         # build descending wavenumber axis
         wavenumbers = np.linspace(wavenumber_start, wavenumber_end, num_points).round(2).tolist()
 
+        if not initial_spectrum:
+             raise ValueError ("Initial spectrum is empty. Cannot generate wavenumber axis.")
+
         print("Logging started. Press Ctrl+C to stop. \n")
 
         # loop data logger whilst probe is running. will stop when not running. 
