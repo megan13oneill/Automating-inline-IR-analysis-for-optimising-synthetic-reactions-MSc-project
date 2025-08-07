@@ -66,6 +66,7 @@ def raw_spectrum_logger (client,
         num_points = len(initial_spectrum)
         # build descending wavenumber axis
         wavenumbers = np.linspace(wavenumber_start, wavenumber_end, num_points).round(2).tolist()
+        print(f"{wavenumbers}")
 
         if not initial_spectrum:
              raise ValueError ("Initial spectrum is empty. Cannot generate wavenumber axis.")
