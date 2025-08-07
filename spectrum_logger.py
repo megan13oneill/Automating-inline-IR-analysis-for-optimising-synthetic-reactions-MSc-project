@@ -58,7 +58,7 @@ def raw_spectrum_logger(
             try:
                 interval_ms = client.get_node(sampling_interval_id).get_value()
                 if interval_ms and isinstance(interval_ms, (int, float)) and interval_ms > 0:
-                    delay_seconds = interval_ms / 1000.0
+                    delay_seconds = interval_ms
             except Exception as e:
                 error_message = "Could not read sampling interval. Using default delay."
                 print(error_message)
