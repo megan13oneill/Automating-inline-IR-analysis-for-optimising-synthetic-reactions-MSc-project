@@ -17,14 +17,14 @@ def get_probe1_data (client, probe1_node_id):
 
         for child in child_nodes:
             try: 
-                browse_name = child.get_browse_name().Name
+                display_name = child.get_display_name().Text
                 value_of_node = child.get_value()
                 if isinstance(value_of_node, (list,tuple)) and len(value_of_node) > 10:
-                    display_value = f"[Array of length {len(value_of_node)}]"
+                    display_value = f"[Array length: {len(value_of_node)}]"
                 else:
                     display_value = value_of_node
                 
-                probe1_results.append((browse_name, display_value))
+                probe1_results.append((display_name, display_value))
 
             except UaStatusCodeError as e:
                 if e.status == ua.StatusCodes.BadAttributeIdInvalid:

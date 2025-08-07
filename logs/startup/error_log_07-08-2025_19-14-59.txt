@@ -1,0 +1,29 @@
+
+--- ERROR LOG ---
+Timestamp: 07-082025_19-15-29
+Context: Failed to read Probe 1 node 'ns=2;s=Local.iCIR.Probe1'
+Exception: 'BadAttributeIdInvalid' object has no attribute 'status'
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 21, in get_probe1_data
+    value_of_node = child.get_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 155, in get_value
+    result = self.get_data_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 164, in get_data_value
+    return self.get_attribute(ua.AttributeIds.Value)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 276, in get_attribute
+    result[0].StatusCode.check()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\ua\uatypes.py", line 218, in check
+    raise UaStatusCodeError(self.value)
+opcua.ua.uaerrors._auto.BadAttributeIdInvalid: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 30, in get_probe1_data
+    if e.status == ua.StatusCodes.BadAttributeIdInvalid:
+       ^^^^^^^^
+AttributeError: 'BadAttributeIdInvalid' object has no attribute 'status'
+------------------------------------------------------------
