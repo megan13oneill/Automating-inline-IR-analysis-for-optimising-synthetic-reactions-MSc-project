@@ -69,8 +69,9 @@ def main():
         # Get probe metadata once connected
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
         print("\nProbe 1 Metadata:")
+        longest_key = max(len(name) for name, _ in probe_data)
         for name, value in probe_data:
-            print(f"{name}: {value}")
+            print(f"{name:<{longest_key}} : {value}")
 
         print("\nAll metadata keys:")
         print([name for name, _ in probe_data])
