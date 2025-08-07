@@ -1,6 +1,7 @@
 # querying the nodes on the IR to get the metadata of the reaction. 
 from opcua import ua
 from opcua.ua.uaerrors import UaStatusCodeError
+from opcua.ua import uaerrors
 
 from error_logger import log_error_to_file
 
@@ -19,6 +20,7 @@ def get_probe1_data (client, probe1_node_id):
             try: 
                 display_name = child.get_display_name().Text
                 value_of_node = child.get_value()
+
                 if isinstance(value_of_node, (list,tuple)) and len(value_of_node) > 10:
                     display_value = f"[Array length: {len(value_of_node)}]"
                 else:
@@ -26,16 +28,15 @@ def get_probe1_data (client, probe1_node_id):
                 
                 probe1_results.append((display_name, display_value))
 
-            except UaStatusCodeError as e:
-                if e.status == ua.StatusCodes.BadAttributeIdInvalid:
-                    log_error_to_file(
-                        context_message=f"Child node '{child}' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)",
-                        exception=e
-                    )
-                else:
-                    log_error_to_file(context_message=f"UaStatusCodeError when reading child node'{child}'",
+            except uaerrors.BadAttributeIdInvalid:
+                log_error_to_file(
+                    context_message=f"Child node '{child}' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)",
                     exception=e
-                    )
+                )
+            except UaStatusCodeError as e:
+                log_error_to_file(context_message=f"UaStatusCodeError when reading child node'{child}'",
+                exception=e
+                )
             except Exception as e:
                 log_error_to_file(
                     context_message=f"Unexpected error while reading child node '{child}'",
