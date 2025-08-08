@@ -23,7 +23,10 @@ def get_probe1_data (client, probe1_node_id):
                 value_of_node = child.get_value()
 
                 if isinstance(value_of_node, (list,tuple)) and len(value_of_node) > 10:
-                    display_value = f"[Array length: {len(value_of_node)}]"
+                    if "Spectra" in display_name:
+                        display_value = f"[Array length: {len(value_of_node)}]"
+                    else:
+                        display_value = f"[Array length: {len(value_of_node)}]"
                 else:
                     display_value = value_of_node
                 
