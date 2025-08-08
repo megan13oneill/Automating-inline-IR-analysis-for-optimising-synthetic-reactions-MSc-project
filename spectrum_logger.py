@@ -25,7 +25,7 @@ def raw_spectrum_logger(
     probe1_node_id=None,
     error_log_path=None,
     stop_event=None,
-    default_delay = 5.0
+    default_delay=5.0
 ):
     """ Continuously logs raw spectrum data while the probe is running at each sampling interval. """
 
@@ -35,7 +35,6 @@ def raw_spectrum_logger(
     spectrum_counter = 0
 
     try:
-        # Wait for the probe to be 'running'
         while True:
             if stop_event and stop_event.is_set():
                 print("Stop event triggered before probe started. Exiting.")
@@ -52,7 +51,7 @@ def raw_spectrum_logger(
                     log_error_to_file(error_log_path, error_message, e)
             time.sleep(1)
 
-        delay_seconds = default_delay  # fallback
+        delay_seconds = default_delay
 
         if sampling_interval_id:
             try:
@@ -80,9 +79,7 @@ def raw_spectrum_logger(
 
         print("Logging started. Press Ctrl+C to stop. \n")
 
-        # 🔁 Main data logging loop
         while True:
-            # ✅ Check for external stop
             if stop_event and stop_event.is_set():
                 print("Stop event triggered. Exiting logging loop.")
                 break
@@ -109,13 +106,42 @@ def raw_spectrum_logger(
                 metadata = {}
                 if probe1_node_id:
                     metadata = dict(get_probe1_data(client, probe1_node_id))
+                    if "Last Sample Treated Spectra" in metadata:
+                        print("🔍 Treated Spectrum Type:", type(metadata["Last Sample Treated Spectra"]))
+                        print("🔍 Treated Spectrum Preview:", str(metadata["Last Sample Treated Spectra"])[:100])
+                    else:
+                        print("⚠️ 'Last Sample Treated Spectra' not found in metadata")
+
                     print(f"Probe metadata keys: {list(metadata.keys())}")  # DEBUG
 
-                    if "Last Sample Treated Spectra" in metadata:
-                        treated_filename = f"treated_spectrum_{timestamp_str}.csv"
-                        treated_csv = os.path.join(run_dir, treated_filename)
-                        print(f"Writing treated spectrum to: {os.path.abspath(treated_csv)}")  # DEBUG
-                        write_spectrum_csv(wavenumbers, metadata["Last Sample Treated Spectra"], treated_csv)
+                    # ✅ Treated spectrum save block (sanitized and validated)
+                    treated_data = metadata.get("Last Sample Treated Spectra", None)
+
+                    try:
+                        if isinstance(treated_data, str):
+                            print(f"⚠️ Treated spectrum is a string. Skipping: {treated_data}")
+                            treated_data = None
+
+                        elif isinstance(treated_data, (list, tuple)):
+                            # Handle nested list [[x1, x2, ...]]
+                            if len(treated_data) == 1 and isinstance(treated_data[0], (list, tuple)):
+                                treated_data = treated_data[0]
+
+                            # Convert to floats
+                            treated_data = [float(x) for x in treated_data]
+
+                            if len(treated_data) == len(wavenumbers):
+                                treated_filename = f"treated_spectrum_{timestamp_str}.csv"
+                                treated_csv = os.path.join(run_dir, treated_filename)
+                                write_spectrum_csv(wavenumbers, treated_data, treated_csv)
+                                print(f"✅ Treated spectrum saved to {treated_csv}")
+                            else:
+                                print(f"⚠️ Treated spectrum length mismatch: expected {len(wavenumbers)}, got {len(treated_data)}")
+
+                    except Exception as e:
+                        print(f"❌ Error processing treated spectrum: {e}")
+                        if error_log_path:
+                            log_error_to_file(error_log_path, "Error saving treated spectrum", e)
 
                 if db_path and document_ids and probe1_node_id:
                     print("Inserting data into DB...")  # DEBUG
