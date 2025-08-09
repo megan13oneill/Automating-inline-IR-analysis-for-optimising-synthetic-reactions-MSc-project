@@ -23,7 +23,6 @@ db_path = "ReactIR.db"
 logs_dir = "logs"
 output_dir = "logs"
 
-
 def main():
     timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
     default_log_folder = os.path.join("logs", "startup")
@@ -31,15 +30,15 @@ def main():
     error_log_path = os.path.join(default_log_folder, f"error_log_{timestamp}.txt")
 
     set_error_log_path(error_log_path)
-    print(f"The initial Error log file for this experiment is: {error_log_path}")
+    print(f"\n📁 Initial Error log file: {error_log_path}")
 
     try:
         client = try_connect(error_log_path=error_log_path)
         if not client:
-            print("Failed to connect to OPC UA server.")
+            print("❌ Failed to connect to OPC UA server.")
             return
 
-        print("Waiting for experiment to fully initialise...")
+        print("\n⏳ Waiting for experiment to fully initialise...")
 
         max_attempts = 3
         delay_sec = 30
@@ -47,39 +46,35 @@ def main():
         treated_node = client.get_node(TREND_NODE_ID)
 
         for attempt in range(1, max_attempts + 1):
-            print(f"Waiting for Trend nodes to initialise... (Attempt {attempt}/{max_attempts})")
+            print(f"🔄 Attempt {attempt}/{max_attempts}: Checking Trend node...")
             time.sleep(delay_sec)
             try:
                 children = treated_node.get_children()
                 if children:
-                    print(f"Trends node has {len(children)} children. Assuming node is ready.")
+                    print(f"✅ Trends node ready with {len(children)} children.")
                     trends_ready = True
                     break
                 else:
-                    print("Trend node found but has no children yet.")
+                    print("⚠️ Trend node found but has no children yet.")
             except Exception as e:
-                print(f"Error checking Trend node: {e}")
+                print(f"❌ Error checking Trend node: {e}")
 
         if not trends_ready:
-            print("Trend node did not initialise after retries. Exiting.")
+            print("❌ Trend node did not initialise after retries. Exiting.")
             return
 
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
-        print("Probe 1 Metadata:")
+        print("\n📡 Probe 1 Metadata")
+        print("-" * 50)
         for name, value in probe_data:
-            # Truncate long lists or strings to avoid flooding the console
             if isinstance(value, (list, tuple)) and len(value) > 10:
                 display_value = f"{value[:5]} ... {value[-5:]} (len={len(value)})"
             elif isinstance(value, str) and len(value) > 100:
                 display_value = f"{value[:100]}... (len={len(value)})"
             else:
                 display_value = value
-
-            print(f"{name}: {display_value}")
-
-
-        #print("All metadata keys:")
-        #print([name for name, _ in probe_data])
+            print(f"{name:<30}: {display_value}")
+        print("-" * 50)
 
         experiment_name = next((value for name, value in probe_data if name == "Experiment Name"), "Unknown_Experiment")
 
@@ -88,7 +83,7 @@ def main():
 
         error_log_path = os.path.join(log_folder, f"error_log_{timestamp}.txt")
         set_error_log_path(error_log_path)
-        print(f"Updated Error log file for this experiment: {error_log_path}")
+        print(f"\n📝 Updated Error log path: {error_log_path}")
 
         spectrum_folder = os.path.join(log_folder, "spectra")
         os.makedirs(spectrum_folder, exist_ok=True)
@@ -108,54 +103,33 @@ def main():
         document_ids = {"DocumentID": document_id}
         peak_nodes = []
         children = treated_node.get_children()
-        print(f"Found {len(children)} children in Probe1.Trends")
+        print(f"\n📊 Found {len(children)} children in Probe1.Trends")
 
+        found_peaks = []
         for child in children:
             try:
-                try:
-                    label = child.get_display_name().Text
-                except Exception as name_e:
-                    label = str(child.nodeid.Identifier)
-                    print(f"Could not get display name for child node {child}: {name_e}")
-                    log_error_to_file(error_log_path, f"Could not get name for child node", name_e)
-
-                found_treated_value = False
-                try:
-                    grandchildren = child.get_children()
-                except Exception as child_e:
-                    print(f"Could not get children of node {label}: {child_e}")
-                    log_error_to_file(error_log_path, f"Could not get children of node {label}", child_e)
-                    continue
-
+                label = child.get_display_name().Text
+                grandchildren = child.get_children()
                 for grandchild in grandchildren:
-                    try:
-                        node_id_str = str(grandchild.nodeid.Identifier)
-                        if node_id_str.endswith(".TreatedValue"):
-                            peak_nodes.append((grandchild, label))
-                            print(f"Found peak: {label}")
-                            found_treated_value = True
-                            break
-                    except Exception as grandchild_e:
-                        print(f"Error checking grandchild of {label}: {grandchild_e}")
-                        log_error_to_file(error_log_path, f"Error checking grandchild of {label}")
-
-                if not found_treated_value:
-                    print(f"Skipped {label} — no .TreatedValue node found.")
-
+                    node_id_str = str(grandchild.nodeid.Identifier)
+                    if node_id_str.endswith(".TreatedValue"):
+                        peak_nodes.append((grandchild, label))
+                        found_peaks.append(label)
+                        break
             except Exception as e:
-                print(f"Unhandled error with trend child node: {e}")
-                try:
-                    log_error_to_file(error_log_path, f"Error reading trend child node {child}", e)
-                except Exception as log_e:
-                    print(f"Failed to log error: {log_e}")
+                log_error_to_file(error_log_path, f"Error with trend child node {child}", e)
 
         if not peak_nodes:
-            print("No valid peak nodes found. Exiting.")
+            print("❌ No valid peak nodes found. Exiting.")
             return
+
+        print("\n📈 Peaks Detected:")
+        for peak in found_peaks:
+            print(f"• {peak}")
 
         trend_id = create_new_trend(db_path, document_id, user_note="Automated trend collection")
         if trend_id == -1:
-            print("Failed to create new trend entry.")
+            print("❌ Failed to create new trend entry.")
             return
 
         stop_event = threading.Event()
@@ -176,14 +150,11 @@ def main():
                     default_delay=5.0
                 )
             except Exception as e:
-                try:
-                    log_error_to_file(error_log_path, "Error in raw_spectrum_logger thread", e)
-                except Exception as log_e:
-                    print(f"Failed to log error in raw_logger thread: {log_e}")
+                log_error_to_file(error_log_path, "Error in raw_spectrum_logger thread", e)
 
         def run_trend_sampler():
             try:
-                print("Starting trend sampling...")
+                print("\n🚀 Starting trend sampling...")
                 start_trend_sampling(
                     db_path=db_path,
                     trend_id=trend_id,
@@ -195,10 +166,7 @@ def main():
                     batch_size=1,
                 )
             except Exception as e:
-                try:
-                    log_error_to_file(error_log_path, "Error in trend sampling thread", e)
-                except Exception as log_e:
-                    print(f"Failed to log error in trend sampler thread: {log_e}")
+                log_error_to_file(error_log_path, "Error in trend sampling thread", e)
 
         raw_thread = threading.Thread(target=run_raw_logger, daemon=True)
         trend_thread = threading.Thread(target=run_trend_sampler, daemon=True)
@@ -206,14 +174,18 @@ def main():
         raw_thread.start()
         trend_thread.start()
 
-        print("Monitoring probe status...")
+        print("\n🔍 Monitoring probe status...")
         probe_status_node = client.get_node(PROBE_STATUS_ID)
+        last_status = None
+
         while True:
             try:
                 status = probe_status_node.get_value()
-                print(f"Probe running: {status}")
+                if status != last_status:
+                    print(f"\n🟢 Probe status changed: {'Running' if status else 'Stopped'}")
+                    last_status = status
                 if not status:
-                    print("Probe stopped. Waiting 10s to flush final data...")
+                    print("\n⏸️ Probe stopped. Waiting 10s to flush final data...")
                     time.sleep(10)
                     stop_event.set()
                     raw_thread.join()
@@ -221,13 +193,10 @@ def main():
                     break
                 time.sleep(5)
             except Exception as e:
-                try:
-                    log_error_to_file(error_log_path, "Error reading probe status", e)
-                except Exception as log_e:
-                    print(f"Failed to log error reading probe status: {log_e}")
+                log_error_to_file(error_log_path, "Error reading probe status", e)
                 break
 
-        print("Processing raw spectrum files...")
+        print("\n🧪 Processing raw spectrum files...")
         processed_count = process_and_store_data(
             input_dir=run_folder,
             output_dir=processed_folder,
@@ -235,28 +204,19 @@ def main():
             window_length=11,
             polyorder=2
         )
-        print(f"Processed {processed_count} spectrum files.")
+        print(f"\n✅ Processed {processed_count} spectrum files.")
 
     except KeyboardInterrupt:
-        print("Logging interrupted by user (Ctrl+C).")
-        try:
-            log_error_to_file(error_log_path, "User interrupted logging (Ctrl+C)")
-        except Exception as log_e:
-            print(f"Failed to log KeyboardInterrupt: {log_e}")
+        print("\n❗ Logging interrupted by user (Ctrl+C).")
+        log_error_to_file(error_log_path, "User interrupted logging (Ctrl+C)")
     except Exception as e:
-        try:
-            log_error_to_file(error_log_path, "Unhandled exception in main()", e)
-        except Exception as log_e:
-            print(f"Failed to log unhandled exception: {log_e}")
+        log_error_to_file(error_log_path, "Unhandled exception in main()", e)
     finally:
         try:
             client.disconnect()
-            print("Disconnected from OPC UA server.")
+            print("\n🔌 Disconnected from OPC UA server.")
         except Exception as e:
-            try:
-                log_error_to_file(error_log_path, "Error during disconnection", e)
-            except Exception as log_e:
-                print(f"Failed to log error during disconnection: {log_e}")
+            log_error_to_file(error_log_path, "Error during disconnection", e)
 
 
 def load_and_preview_db(file_path=db_path, num_rows=5):
@@ -271,7 +231,7 @@ def load_and_preview_db(file_path=db_path, num_rows=5):
         return
 
     for table_name in tables:
-        print(f"--- Table: {table_name} ---")
+        print(f"\n--- Table: {table_name} ---")
         df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
         print("Header:")
         print(df.columns.to_list())
@@ -284,5 +244,5 @@ def load_and_preview_db(file_path=db_path, num_rows=5):
 
 if __name__ == "__main__":
     main()
-    # db_path = 'ReactIR.db'
-    # load_and_preview_db(db_path)
+    # Uncomment to preview database
+    # load_and_preview_db()
