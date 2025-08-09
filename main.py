@@ -64,7 +64,7 @@ def main():
             print("Trend node did not initialise after retries. Exiting.")
             return
 
-        probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
+        probe_data = get_probe1_data(client, PROBE_1_NODE_ID, processed_folder)
         print("Probe 1 Metadata:")
         for name, value in probe_data:
             print(f"{name}: {value}")
