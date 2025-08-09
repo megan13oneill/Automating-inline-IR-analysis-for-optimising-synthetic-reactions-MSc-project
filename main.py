@@ -64,7 +64,7 @@ def main():
             return
 
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
-        print("\n📡 Probe 1 Metadata")
+        print("\n📱 Probe 1 Metadata")
         print("-" * 50)
         for name, value in probe_data:
             if isinstance(value, (list, tuple)) and len(value) > 10:
@@ -136,6 +136,24 @@ def main():
 
         def run_raw_logger():
             try:
+                sample_number = 0
+
+                def callback(data):
+                    nonlocal sample_number
+                    sample_number += 1
+                    timestamp = data.get("timestamp")
+                    treated = data.get("treated_spectrum", [])[:5]
+                    raw_csv = data.get("raw_csv_path", "<not saved>")
+                    treated_csv = data.get("treated_csv_path", "<not saved>")
+                    doc_id = data.get("document_id", "?")
+
+                    print(f"\n📝 Logged spectrum #{sample_number} at {timestamp}")
+                    print(f"• Saved raw     : {raw_csv}")
+                    print(f"• Saved treated : {treated_csv}")
+                    print(f"• DB Entry      : Inserted spectrum for DocumentID {doc_id}")
+                    print(f"• Sample preview: {treated} ... (len={len(data.get('treated_spectrum', []))})")
+                    print("-" * 50)
+
                 raw_spectrum_logger(
                     client=client,
                     probe_status_id=PROBE_STATUS_ID,
@@ -147,7 +165,8 @@ def main():
                     probe1_node_id=PROBE_1_NODE_ID,
                     error_log_path=error_log_path,
                     stop_event=stop_event,
-                    default_delay=5.0
+                    default_delay=5.0,
+                    callback=callback
                 )
             except Exception as e:
                 log_error_to_file(error_log_path, "Error in raw_spectrum_logger thread", e)
