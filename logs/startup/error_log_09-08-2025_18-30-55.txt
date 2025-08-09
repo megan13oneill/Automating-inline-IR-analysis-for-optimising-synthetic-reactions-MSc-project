@@ -1,0 +1,12 @@
+
+--- ERROR LOG ---
+Timestamp: 09-082025_18-31-25
+Context: logs\startup\error_log_09-08-2025_18-30-55.txt
+Exception: Unhandled exception in main()
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 67, in main
+    probe_data = get_probe1_data(client, PROBE_1_NODE_ID, processed_folder)
+                                                          ^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'processed_folder' where it is not associated with a value
+------------------------------------------------------------

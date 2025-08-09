@@ -14,7 +14,7 @@ from db_utils import create_new_document, start_trend_sampling, create_new_trend
 from error_logger import set_error_log_path, get_error_log_path, log_error_to_file
 
 PROBE_1_NODE_ID = "ns=2;s=Local.iCIR.Probe1"
-TREND_NODE_ID = "ns=2;s=Local.iCIR.Probe1.Trends"
+TREND_NODE_ID = "ns=2;s=Local.iCIR.Probe1.Trends
 RAW_SPECTRUM_ID = "ns=2;s=Local.iCIR.Probe1.SpectraRaw"
 PROBE_STATUS_ID = "ns=2;s=Local.iCIR.Probe1.ProbeStatus"
 SAMPLING_INTERVAL_ID = "ns=2;s=Local.iCIR.Probe1.CurrentSamplingInterval"
@@ -64,7 +64,7 @@ def main():
             print("Trend node did not initialise after retries. Exiting.")
             return
 
-        probe_data = get_probe1_data(client, PROBE_1_NODE_ID, processed_folder)
+        probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
         print("Probe 1 Metadata:")
         for name, value in probe_data:
             print(f"{name}: {value}")
