@@ -67,7 +67,16 @@ def main():
         probe_data = get_probe1_data(client, PROBE_1_NODE_ID)
         print("Probe 1 Metadata:")
         for name, value in probe_data:
-            print(f"{name}: {value}")
+            # Truncate long lists or strings to avoid flooding the console
+            if isinstance(value, (list, tuple)) and len(value) > 10:
+                display_value = f"{value[:5]} ... {value[-5:]} (len={len(value)})"
+            elif isinstance(value, str) and len(value) > 100:
+                display_value = f"{value[:100]}... (len={len(value)})"
+            else:
+                display_value = value
+
+            print(f"{name}: {display_value}")
+
 
         #print("All metadata keys:")
         #print([name for name, _ in probe_data])
