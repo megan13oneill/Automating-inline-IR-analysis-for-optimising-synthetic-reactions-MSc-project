@@ -1,0 +1,63 @@
+
+--- ERROR LOG ---
+Timestamp: 18-082025_12-53-05
+Context: Child node 'ns=2;s=Local.iCIR.Probe1.Trends' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)
+Exception: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 23, in get_probe1_data
+    value_of_node = child.get_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 155, in get_value
+    result = self.get_data_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 164, in get_data_value
+    return self.get_attribute(ua.AttributeIds.Value)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 276, in get_attribute
+    result[0].StatusCode.check()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\ua\uatypes.py", line 218, in check
+    raise UaStatusCodeError(self.value)
+opcua.ua.uaerrors._auto.BadAttributeIdInvalid: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 18-082025_12-53-05
+Context: Child node 'ns=2;s=Local.iCIR.Probe1.Triggers' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)
+Exception: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 23, in get_probe1_data
+    value_of_node = child.get_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 155, in get_value
+    result = self.get_data_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 164, in get_data_value
+    return self.get_attribute(ua.AttributeIds.Value)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 276, in get_attribute
+    result[0].StatusCode.check()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\ua\uatypes.py", line 218, in check
+    raise UaStatusCodeError(self.value)
+opcua.ua.uaerrors._auto.BadAttributeIdInvalid: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 18-082025_12-53-05
+Context: Child node 'ns=2;s=Local.iCIR.Probe1.Methods' does not support attribute 'Value'. Skipped. (BadAttributeIdInvalid)
+Exception: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\metadata_utils.py", line 23, in get_probe1_data
+    value_of_node = child.get_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 155, in get_value
+    result = self.get_data_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 164, in get_data_value
+    return self.get_attribute(ua.AttributeIds.Value)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 276, in get_attribute
+    result[0].StatusCode.check()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\ua\uatypes.py", line 218, in check
+    raise UaStatusCodeError(self.value)
+opcua.ua.uaerrors._auto.BadAttributeIdInvalid: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+------------------------------------------------------------
