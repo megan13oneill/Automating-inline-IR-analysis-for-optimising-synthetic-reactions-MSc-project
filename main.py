@@ -166,7 +166,7 @@ def main():
                     error_log_path=error_log_path,
                     stop_event=stop_event,
                     default_delay=5.0,
-                    callback=callback
+                   # callback=callback
                 )
             except Exception as e:
                 log_error_to_file(error_log_path, "Error in raw_spectrum_logger thread", e)

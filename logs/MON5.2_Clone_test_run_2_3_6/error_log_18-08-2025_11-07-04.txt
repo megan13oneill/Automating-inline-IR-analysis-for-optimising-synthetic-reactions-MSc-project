@@ -1,0 +1,52 @@
+
+--- ERROR LOG ---
+Timestamp: 18-082025_11-07-34
+Context: logs\MON5.2_Clone_test_run_2_3_6\error_log_18-08-2025_11-07-04.txt
+Exception: Error in raw_spectrum_logger thread
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 157, in run_raw_logger
+    raw_spectrum_logger(
+    ~~~~~~~~~~~~~~~~~~~^
+        client=client,
+        ^^^^^^^^^^^^^^
+    ...<10 lines>...
+        callback=callback
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: raw_spectrum_logger() got an unexpected keyword argument 'callback'
+------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 18-082025_11-07-34
+Context: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+Exception: Error in start_trend_sampling()
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\db_utils.py", line 303, in start_trend_sampling
+    probe_value = probe_node.get_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 155, in get_value
+    result = self.get_data_value()
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 164, in get_data_value
+    return self.get_attribute(ua.AttributeIds.Value)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 276, in get_attribute
+    result[0].StatusCode.check()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\ua\uatypes.py", line 218, in check
+    raise UaStatusCodeError(self.value)
+opcua.ua.uaerrors._auto.BadAttributeIdInvalid: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
+------------------------------------------------------------
+
+--- ERROR LOG ---
+Timestamp: 18-082025_11-09-11
+Context: logs\MON5.2_Clone_test_run_2_3_6\error_log_18-08-2025_11-07-04.txt
+Exception: User interrupted logging (Ctrl+C)
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 213, in main
+    time.sleep(5)
+    ~~~~~~~~~~^^^
+KeyboardInterrupt
+------------------------------------------------------------
