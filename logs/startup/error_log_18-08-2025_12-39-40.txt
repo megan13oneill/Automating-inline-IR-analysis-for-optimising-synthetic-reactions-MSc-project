@@ -1,0 +1,12 @@
+
+--- ERROR LOG ---
+Timestamp: 18-082025_12-39-54
+Context: logs\startup\error_log_18-08-2025_12-39-40.txt
+Exception: User interrupted logging (Ctrl+C)
+Traceback:
+Traceback (most recent call last):
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 50, in main
+    time.sleep(delay_sec)
+    ~~~~~~~~~~^^^^^^^^^^^
+KeyboardInterrupt
+------------------------------------------------------------
