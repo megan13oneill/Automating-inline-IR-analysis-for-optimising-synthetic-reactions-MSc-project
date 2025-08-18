@@ -1,7 +1,7 @@
 
 --- ERROR LOG ---
-Timestamp: 09-082025_22-22-01
-Context: logs\MON5.2_Clone_test_run_2_3_4\error_log_09-08-2025_22-21-30.txt
+Timestamp: 14-082025_13-10-38
+Context: logs\MON5.2_Clone_test_run_2_3_5\error_log_14-08-2025_13-10-07.txt
 Exception: Error in raw_spectrum_logger thread
 Traceback:
 Traceback (most recent call last):
@@ -19,7 +19,7 @@ TypeError: raw_spectrum_logger() got an unexpected keyword argument 'callback'
 ------------------------------------------------------------
 
 --- ERROR LOG ---
-Timestamp: 09-082025_22-22-01
+Timestamp: 14-082025_13-10-38
 Context: "The attribute is not supported for the specified Node."(BadAttributeIdInvalid)
 Exception: Error in start_trend_sampling()
 Traceback:
@@ -40,22 +40,13 @@ opcua.ua.uaerrors._auto.BadAttributeIdInvalid: "The attribute is not supported f
 ------------------------------------------------------------
 
 --- ERROR LOG ---
-Timestamp: 10-082025_00-34-36
-Context: logs\MON5.2_Clone_test_run_2_3_4\error_log_09-08-2025_22-21-30.txt
-Exception: Error reading probe status
+Timestamp: 14-082025_13-11-20
+Context: logs\MON5.2_Clone_test_run_2_3_5\error_log_14-08-2025_13-10-07.txt
+Exception: User interrupted logging (Ctrl+C)
 Traceback:
 Traceback (most recent call last):
-  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 202, in main
-    status = probe_status_node.get_value()
-  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 155, in get_value
-    result = self.get_data_value()
-  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 164, in get_data_value
-    return self.get_attribute(ua.AttributeIds.Value)
-           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\common\node.py", line 276, in get_attribute
-    result[0].StatusCode.check()
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\FlowChemIR_User\AppData\Local\Programs\Python\Python313\Lib\site-packages\opcua\ua\uatypes.py", line 218, in check
-    raise UaStatusCodeError(self.value)
-opcua.ua.uaerrors._auto.BadNodeIdUnknown: "The node id refers to a node that does not exist in the server address space."(BadNodeIdUnknown)
+  File "c:\Users\FlowChemIR_User\Desktop\AGS Users\Meg\Automating-inline-IR-analysis-for-optimising-synthetic-reactions-MSc-project-1\main.py", line 213, in main
+    time.sleep(5)
+    ~~~~~~~~~~^^^
+KeyboardInterrupt
 ------------------------------------------------------------
