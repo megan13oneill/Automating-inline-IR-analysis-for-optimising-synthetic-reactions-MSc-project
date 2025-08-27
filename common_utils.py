@@ -15,3 +15,5 @@ def write_spectrum_csv(wavenumbers, spectrum, filepath):
             writer.writerow([wn, trans])
         file.flush()
         os.fsync(file.fileno())
+
+        
