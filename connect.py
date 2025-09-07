@@ -1,5 +1,6 @@
 import time
 from opcua import Client
+
 from error_logger import log_error_to_file
 
 # OPC UA server endpoint for the Mettler Toldeo IR Flow cell. 
