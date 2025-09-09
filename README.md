@@ -56,4 +56,57 @@ This script will:
   load_and_preview_db("ReactIR.db", num_rows=5)
 
 ## Key Modules 
+connect.py
+Handles OPC UA server connection with retry logic and error logging.
+
+db_utils.py
+Creates and manages the SQLite database.
+Inserts probe, sample, spectra, and trend data.
+Handles real-time sampling and batch inserts for trends and peaks.
+
+common_utils.py
+Timestamp generation for file naming.
+CSV writing for spectral data.
+
+metadata_utils.py
+Retrieves metadata from Probe1 node (e.g., experiment name, temperatures, spectra info).
+
+spectrum_logger.py
+Continuous logging of raw and optionally treated spectra.
+Supports dynamic sampling intervals.
+Inserts spectra into the database with associated probe/sample metadata.
+
+processing_utils.py
+Post-processes CSV spectra.
+Optional smoothing using the Savitzky-Golay filter.
+Generates plots (PDF and PNG) of transmittance vs wavenumber.
+
+error_logger.py
+Centralised error logging system.
+Configurable log paths.
+Captures stack traces and context messages.
+
+## Database Schema
+Key tables:
+- Users, Projects, Experiments, Documents
+- Probes, Samples, Spectra
+- Trends, ProbeTempSamples, PeakSamples
+- Reagents
+Indexes and PRAGMA settings are included for improved performance and concurrency.
+
+## Error Handling
+- Errors are logged in a dedicated .txt file under logs/.
+- The logger captures:
+    Context messages
+    Exception messages
+    Stack traces
+- Errors do not stop logging; the system attempts to continue when possible.
+
+
+
+
+
+
+
+
 
