@@ -26,7 +26,7 @@ Requirements:
   ```pip install opcua pandas numpy scipy matplotlib```
 
   ## Directory Structure
-  ```project_root/
+  project_root/
 │
 ├─ main.py                   (Main orchestrator)
 
@@ -62,9 +62,9 @@ This script will:
 
 2. Optional: Preview the database
 
-  from main import load_and_preview_db
+  ``` from main import load_and_preview_db```
 
-  load_and_preview_db("ReactIR.db", num_rows=5)
+  ```load_and_preview_db("ReactIR.db", num_rows=5)```
 
 ## Key Modules 
 connect.py
