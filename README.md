@@ -28,25 +28,25 @@ Requirements:
   ## Directory Structure
   ```project_root/
 │
-├─- main.py                  # Main orchestrator
+├─ main.py                  # Main orchestrator
 
-├─- connect.py               # OPC UA connection utility
+├─ connect.py               # OPC UA connection utility
 
-├─- db_utils.py              # Database creation, insertion, and trend sampling
+├─ db_utils.py              # Database creation, insertion, and trend sampling
 
-├─- common_utils.py          # Utility functions (timestamps, CSV writing)
+├─ common_utils.py          # Utility functions (timestamps, CSV writing)
 
-├─- metadata_utils.py        # Probe metadata querying
+├─ metadata_utils.py        # Probe metadata querying
 
-├─- spectrum_logger.py       # Continuous spectrum logging
+├─ spectrum_logger.py       # Continuous spectrum logging
 
-├─- processing_utils.py      # Spectrum post-processing and plotting
+├─ processing_utils.py      # Spectrum post-processing and plotting
 
-├─- error_logger.py          # Error logging utilities
+├─ error_logger.py          # Error logging utilities
 
-├─- ReactIR.db               # SQLite database (generated at runtime)
+├─ ReactIR.db               # SQLite database (generated at runtime)
 
-├─- logs/                    # Log files, raw/processed spectra
+├─ logs/                    # Log files, raw/processed spectra
 
 
 ## Usage
