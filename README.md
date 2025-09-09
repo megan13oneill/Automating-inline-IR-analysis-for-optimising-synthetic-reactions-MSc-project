@@ -22,21 +22,32 @@ The system supports real-time sampling of probe data, spectral acquisition, erro
 Requirements: 
 - Python 3.8+
 - packages:
-  pip install opcua pandas numpy scipy matplotlib
+
+  ```pip install opcua pandas numpy scipy matplotlib```
 
   ## Directory Structure
-  project_root/
+  ```project_root/
 │
-├─ main.py                  # Main orchestrator
-├─ connect.py               # OPC UA connection utility
-├─ db_utils.py              # Database creation, insertion, and trend sampling
-├─ common_utils.py          # Utility functions (timestamps, CSV writing)
-├─ metadata_utils.py        # Probe metadata querying
-├─ spectrum_logger.py       # Continuous spectrum logging
-├─ processing_utils.py      # Spectrum post-processing and plotting
-├─ error_logger.py          # Error logging utilities
-├─ ReactIR.db               # SQLite database (generated at runtime)
-├─ logs/                    # Log files, raw/processed spectra
+├─- main.py                  # Main orchestrator
+
+├─- connect.py               # OPC UA connection utility
+
+├─- db_utils.py              # Database creation, insertion, and trend sampling
+
+├─- common_utils.py          # Utility functions (timestamps, CSV writing)
+
+├─- metadata_utils.py        # Probe metadata querying
+
+├─- spectrum_logger.py       # Continuous spectrum logging
+
+├─- processing_utils.py      # Spectrum post-processing and plotting
+
+├─- error_logger.py          # Error logging utilities
+
+├─- ReactIR.db               # SQLite database (generated at runtime)
+
+├─- logs/                    # Log files, raw/processed spectra
+
 
 ## Usage
 1. Run the experiment logging system:
@@ -112,9 +123,10 @@ Indexes and PRAGMA settings are included for improved performance and concurrenc
 6. Stop logging manually or when the probe status indicates completion.
 7. Post-process collected spectra (optional smoothing & plotting).
 
+## Notes
+- Ensure the OPC UA server endpoint is correctly set in connect.py.
+- Database file (ReactIR.db) is created automatically if it does not exist.
+- All logs and processed data are organised under logs/<experiment_name>/.
 
-
-
-
-
-
+## Licence
+The project is open-source and can be modified for research or industrial IR probe logging.
