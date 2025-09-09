@@ -5,7 +5,6 @@ from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 
 def adjust_window_length(window_length, data_length):
-
     """Ensure the window_length is an odd number, less than data_length, and at least 3."""
 
     if window_length >= data_length:

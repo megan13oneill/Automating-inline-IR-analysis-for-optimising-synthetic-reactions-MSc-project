@@ -24,6 +24,7 @@ logs_dir = "logs"
 output_dir = "logs"
 
 def main():
+    """ orchestrator for a complete experiment run using OPC UA connected to IR probe."""
     timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
     default_log_folder = os.path.join("logs", "startup")
     os.makedirs(default_log_folder, exist_ok=True)
@@ -239,6 +240,7 @@ def main():
 
 
 def load_and_preview_db(file_path=db_path, num_rows=5):
+    """prints last 5 rows in database for quick preview."""
     conn = sqlite3.connect(file_path)
     cursor = conn.cursor()
 

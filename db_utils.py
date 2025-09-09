@@ -13,6 +13,7 @@ SAMPLE_COLUMNS = ["ProbeID", "SampleCount", "LastSampleTime", "CurrentSamplingIn
 SPECTRA_COLUMNS = ["SampleID", "Type", "FilePath", "RecordedAt"]
 
 def setup_database(db_path="ReactIR.db"):
+    """ set up the database structure and the tables for the SQL db."""
     try:
         # Connect to SQLite DB
         with sqlite3.connect(db_path) as conn:
@@ -267,6 +268,7 @@ def insert_probe_sample_and_spectrum(db_path, document_id, metadata_dict, spectr
         conn.close()
 
 def create_new_trend(db_path, document_id, user_note=("")):
+    """insert new trend into the trends table"""
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
