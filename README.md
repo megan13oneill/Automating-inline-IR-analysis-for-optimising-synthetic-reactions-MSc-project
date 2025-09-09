@@ -97,12 +97,20 @@ Indexes and PRAGMA settings are included for improved performance and concurrenc
 ## Error Handling
 - Errors are logged in a dedicated .txt file under logs/.
 - The logger captures:
-    Context messages
-    Exception messages
-    Stack traces
+  - Context messages
+  - Exception messages
+  - Stack traces
 - Errors do not stop logging; the system attempts to continue when possible.
 
 
+## Example Workflow
+1. Connect to the OPC UA server.
+2. Verify trends node readiness.
+3. Retrieve probe metadata.
+4. Start a new trend in the database.
+5. Begin continuous spectrum logging and trend sampling.
+6. Stop logging manually or when the probe status indicates completion.
+7. Post-process collected spectra (optional smoothing & plotting).
 
 
 
